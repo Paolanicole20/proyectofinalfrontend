@@ -1,0 +1,89 @@
+.home-simple {
+  padding: 40px 20px;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+.welcome-box {
+  background: rgba(255, 255, 255, 0.95); /* Blanco casi sólido */
+  padding: 3rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  text-align: center;
+}
+
+.welcome-box h1 {
+  color: #1e293b;
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+  font-weight: 800;
+}
+
+.welcome-box hr {
+  border: 0;
+  border-top: 2px solid #6366f1; /* Línea de color azul/morado */
+  width: 60px;
+  margin: 1.5rem auto;
+}
+
+.welcome-box p {
+  font-size: 1.1rem;
+  color: #475569;
+  margin: 10px 0;
+}
+
+.role-tag {
+  background: #6366f1;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.home-instructions {
+  background: rgba(255, 255, 255, 0.1); /* Fondo translúcido */
+  backdrop-filter: blur(10px); /* Efecto borroso */
+  padding: 2rem;
+  border-radius: 16px;
+  color: white; /* Texto blanco para que resalte sobre el fondo oscuro */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.home-instructions h3 {
+  margin-top: 0;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.home-instructions ul {
+  list-style: none;
+  padding: 0;
+}
+
+.home-instructions li {
+  margin-bottom: 12px;
+  padding-left: 25px;
+  position: relative;
+}
+
+.home-instructions li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #4ade80; /* Check verde */
+  font-weight: bold;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
