@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 
-const apiUrl = import.meta.env.VITE_APIMANT_URL || 'http://127.0.0.1:4000/api';
+const apiUrl = import.meta.env.VITE_APIMANT_URL || 'http://127.0.0.1:5000/api';
 
 const axiosInstance = axios.create({ 
     baseURL: apiUrl,
