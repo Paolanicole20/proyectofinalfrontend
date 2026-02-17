@@ -1,12 +1,13 @@
-import axios from 'axios';
+import axiosInstance from '../api/axiosInstance'; 
 
-const BASE_URL = 'http://localhost:3000/api/fines';
+const ENDPOINT = '/fines';
 
 export const fineService = {
-  getAll: () => axios.get(BASE_URL),
-  pay: (id) => axios.put(`${BASE_URL}/pay/${id}`),
-  create: (data) => axios.post(BASE_URL, data),
-  delete: (id) => axios.delete(`${BASE_URL}/${id}`)
+  getAll: () => axiosInstance.get(ENDPOINT),
+  // Ajustado para que coincida con la ruta estándar: /fines/:id/pay
+  pay: (id) => axiosInstance.put(`${ENDPOINT}/${id}/pay`),
+  create: (data) => axiosInstance.post(ENDPOINT, data),
+  delete: (id) => axiosInstance.delete(`${ENDPOINT}/${id}`)
 };
 
 export default fineService;

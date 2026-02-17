@@ -21,20 +21,27 @@ import EditBookPage from './pages/books/EditBookPage';
 // Categorías
 import CategoriesPage from './pages/categories/CategoriesPage';
 import CreateCategoryPage from './pages/categories/CreateCategoryPage';
+import EditCategoryPage from './pages/categories/EditCategoryPage'; // Nueva
 
 // Préstamos
 import LoansPage from './pages/loans/LoansPage';
 import CreateLoanPage from './pages/loans/CreateLoanPage';
+import EditLoanPage from './pages/loans/EditLoanPage'; // Nueva
 
-// --- IMPORTACIONES ACTIVADAS ---
+// Devoluciones
 import ReturnsPage from './pages/returns/ReturnsPage';
-import CreateReturnPage from './pages/returns/CreateReturnPage'; 
+import CreateReturnPage from './pages/returns/CreateReturnPage';
+import EditReturnPage from './pages/returns/EditReturnPage'; // Nueva
 
+// Multas
 import FinesPage from './pages/fines/FinesPage';
-import CreateFinePage from './pages/fines/CreateFinePage'; 
+import CreateFinePage from './pages/fines/CreateFinePage';
+import EditFinePage from './pages/fines/EditFinePage'; // Nueva
 
+// Reservaciones
 import ReservationsPage from './pages/reservations/ReservationsPage';
-import CreateReservationPage from './pages/reservations/CreateReservationPage'; 
+import CreateReservationPage from './pages/reservations/CreateReservationPage';
+import EditReservationPage from './pages/reservations/EditReservationPage'; // Nueva
 
 // Usuarios y Seguridad
 import UsersPage from './pages/users/UsersPage';
@@ -45,14 +52,19 @@ import ChangePasswordUserPage from './pages/users/ChangePasswordUserPage';
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter 
+      future={{ 
+        v7_startTransition: true, 
+        v7_relativeSplatPath: true 
+      }}
+    >
       <Routes>
         <Route path="/" element={<Layout />}>
           
           <Route index element={<Home />} />
           <Route path="/users/login" element={<LoginUserPage />} />
 
-          {/* --- RUTAS PROTEGIDAS: ACCESO GENERAL --- */}
+          {/* --- RUTAS PROTEGIDAS: ACCESO GENERAL (Admin y Usuario) --- */}
           <Route element={<ProtectedRoute allowedRoles={['ADMIN_ROLE', 'USER_ROLE']} />}>
             <Route path="/students" element={<StudentsPage />} />
             <Route path="/books" element={<BooksPage />} />
@@ -64,27 +76,42 @@ function App() {
             <Route path="/users/changepassword" element={<ChangePasswordUserPage />} />
           </Route>
 
-          {/* --- RUTAS PROTEGIDAS: GESTIÓN (Solo Admin) --- */}
+          {/* --- RUTAS PROTEGIDAS: GESTIÓN Y ESCRITURA (Solo Admin) --- */}
           <Route element={<ProtectedRoute allowedRoles={['ADMIN_ROLE']} />}>
+            
+            {/* Gestión de Estudiantes */}
             <Route path="/students/create" element={<CreateStudentPage />} />
             <Route path="/students/edit/:id" element={<EditStudentPage />} />
             
+            {/* Gestión de Libros y Categorías */}
             <Route path="/books/create" element={<CreateBookPage />} />
             <Route path="/books/edit/:id" element={<EditBookPage />} />
             <Route path="/categories/create" element={<CreateCategoryPage />} />
+            <Route path="/categories/edit/:id" element={<EditCategoryPage />} />
             
+            {/* Gestión de Préstamos */}
             <Route path="/loans/create" element={<CreateLoanPage />} />
+            <Route path="/loans/edit/:id" element={<EditLoanPage />} />
 
-            {/* RUTAS DE CREACIÓN ACTIVADAS AHORA */}
+            {/* Gestión de Devoluciones */}
             <Route path="/returns/create" element={<CreateReturnPage />} />
-            <Route path="/fines/create" element={<CreateFinePage />} />
-            <Route path="/reservations/create" element={<CreateReservationPage />} /> 
+            <Route path="/returns/edit/:id" element={<EditReturnPage />} />
 
+            {/* Gestión de Multas */}
+            <Route path="/fines/create" element={<CreateFinePage />} />
+            <Route path="/fines/edit/:id" element={<EditFinePage />} />
+
+            {/* Gestión de Reservaciones */}
+            <Route path="/reservations/create" element={<CreateReservationPage />} /> 
+            <Route path="/reservations/edit/:id" element={<EditReservationPage />} /> 
+
+            {/* Gestión de Usuarios del Sistema */}
             <Route path="/users" element={<UsersPage />} />
             <Route path="/users/create" element={<CreateUserPage />} />
             <Route path="/users/edit/:id" element={<EditUserPage />} />
           </Route>
 
+          {/* Redirección por defecto para rutas no encontradas */}
           <Route path="*" element={<Navigate to="/" />} />
         </Route>
       </Routes>

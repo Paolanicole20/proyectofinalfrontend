@@ -1,7 +1,27 @@
+/* --- VARIABLES Y CONFIGURACIÓN BASE --- */
+:root {
+  --primary-blue: #1a237e;
+  --secondary-blue: #0d1440;
+  --accent-blue: #2563eb;
+  --danger-red: #dc2626;
+  --success-green: #15803d;
+  --bg-light: #f8fafc;
+  --border-color: #e2e8f0;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+}
+
 /* --- DISEÑO DE CONTENEDORES Y ESTRUCTURA --- */
 .page-container {
-  padding: 10px;
+  padding: 20px;
   animation: fadeIn 0.5s ease-in-out;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .page-header {
@@ -14,19 +34,25 @@
 }
 
 .page-title {
-  color: #1a237e; /* Azul oscuro a juego con tu barra superior */
+  color: var(--primary-blue);
   font-size: 1.8rem;
   font-weight: 800;
   margin: 0;
 }
 
+.page-description {
+  color: var(--text-muted);
+  margin: 5px 0 0 0;
+  font-size: 0.95rem;
+}
+
 /* --- SECCIÓN DE BÚSQUEDA Y FILTROS --- */
 .search-section {
-  background: #f8fafc;
+  background: var(--bg-light);
   padding: 20px;
   border-radius: 12px;
   margin-bottom: 25px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
 }
 
 .search-form {
@@ -45,7 +71,7 @@
 .form-group-inline label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .form-group-inline input {
@@ -53,15 +79,24 @@
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group-inline input:focus {
+  border-color: var(--accent-blue);
 }
 
 /* --- TABLAS MODERNAS --- */
 .table-card {
   background: white;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+}
+
+.table-container {
+  overflow-x: auto;
 }
 
 .data-table {
@@ -70,29 +105,75 @@
   background: white;
 }
 
-.data-table th {
-  background: #f1f5f9;
+/* Encabezado Azul Oscuro como en tu imagen */
+.data-table thead th {
+  background: var(--primary-blue);
   padding: 15px;
-  text-align: left;
-  color: #475569;
+  text-align: center;
+  color: white;
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  font-weight: 600;
 }
 
 .data-table td {
   padding: 15px;
   border-bottom: 1px solid #f1f5f9;
-  color: #1e293b;
+  color: var(--text-main);
+  text-align: center;
+  vertical-align: middle;
 }
 
 .data-table tr:hover {
   background-color: #f8fafc;
 }
 
-/* --- BOTONES Y BADGES --- */
+/* --- BOTONES DE ACCIÓN DENTRO DE TABLAS --- */
+.table-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-table-edit, .btn-table-delete {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn-table-edit {
+  color: var(--accent-blue);
+}
+
+.btn-table-edit span {
+  text-decoration: underline;
+}
+
+.btn-table-delete {
+  color: var(--danger-red);
+}
+
+.btn-table-delete span {
+  text-decoration: underline;
+}
+
+.btn-table-edit:hover, .btn-table-delete:hover {
+  opacity: 0.7;
+  transform: scale(1.05);
+}
+
+/* --- BOTONES PRINCIPALES --- */
 .btn-primary {
-  background-color: #1a237e !important;
+  background-color: var(--primary-blue) !important;
   color: white !important;
   padding: 10px 20px;
   border-radius: 8px;
@@ -100,27 +181,65 @@
   border: none;
   cursor: pointer;
   transition: transform 0.2s, background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .btn-primary:hover {
-  background-color: #0d1440 !important;
+  background-color: var(--secondary-blue) !important;
   transform: translateY(-1px);
 }
 
-.badge-success { 
-  background: #dcfce7; 
-  color: #15803d; 
-  padding: 6px 12px; 
-  border-radius: 99px; 
-  font-size: 12px; 
+.btn-danger {
+  background-color: var(--danger-red);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
   font-weight: bold;
+  cursor: pointer;
 }
 
-/* --- ESTILOS PARA FORMULARIOS (Como Registrar Préstamo) --- */
+/* --- BADGES Y ESTADOS --- */
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+.status-active { background: #dcfce7; color: #15803d; }
+.status-danger { background: #fee2e2; color: #991b1b; }
+.status-returned { background: #f1f5f9; color: #475569; }
+.badge-success { background: #dcfce7; color: #15803d; }
+
+/* --- INFORMACIÓN DE USUARIO/LIBRO EN CELDA --- */
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.user-name {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.user-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* --- FORMULARIOS --- */
 .form-card {
   background: white;
   padding: 25px;
   border-radius: 15px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
 
 .form-grid {
@@ -139,16 +258,30 @@
 .form-group label {
   font-weight: 600;
   color: #475569;
+  font-size: 0.9rem;
 }
 
-.form-group input, .form-group select {
+.form-group input, .form-group select, .form-group textarea {
   padding: 10px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
+  outline: none;
+}
+
+.form-group input:focus {
+  border-color: var(--primary-blue);
 }
 
 .button-group {
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+/* Estados de carga */
+.loading-state {
+  text-align: center;
+  padding: 50px;
+  color: var(--primary-blue);
+  font-weight: 600;
 }

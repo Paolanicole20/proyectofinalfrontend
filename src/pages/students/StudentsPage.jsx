@@ -16,15 +16,17 @@ const StudentsPage = () => {
     nombre: ''
   });
 
-  // Función para cargar estudiantes con diagnóstico
+  // Función corregida: ahora llama a 'getAll' en lugar de 'getStudents'
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const response = await studentService.getStudents(formData);
+      
+      // Llamamos a getAll que es el nombre definido en el servicio
+      const response = await studentService.getAll(formData);
       
       console.log("Datos recibidos de la API:", response.data);
 
-      // Normalización de datos: detecta si vienen en .students o directo
+      // Normalización de datos
       const data = response.data?.students || response.data || [];
       setStudents(Array.isArray(data) ? data : []);
 
@@ -46,6 +48,7 @@ const StudentsPage = () => {
     if (!confirmed) return;
 
     try {
+      // Ahora coincide con el nombre exportado en el servicio corregido
       await studentService.deleteStudent(id);
       toast.success('Estudiante eliminado correctamente');
       fetchStudents(); 
@@ -57,7 +60,6 @@ const StudentsPage = () => {
   return (
     <div className="page-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       
-      {/* HEADER DE LA PÁGINA */}
       <div className="page-header" style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -71,7 +73,6 @@ const StudentsPage = () => {
           <p style={{ margin: 0, color: '#666' }}>Registro y administración de la biblioteca</p>
         </div>
         
-        {/* Botón habilitado para todos los niveles de acceso (Temporalmente) */}
         <button 
           className="btn btn-primary"
           onClick={() => navigate('/students/create')}
@@ -93,7 +94,6 @@ const StudentsPage = () => {
         </button>
       </div>
 
-      {/* SECCIÓN DE BÚSQUEDA */}
       <div className="search-section" style={{ 
         backgroundColor: '#f8f9fa', 
         padding: '20px', 
@@ -108,7 +108,7 @@ const StudentsPage = () => {
               type="text"
               value={formData.matricula}
               onChange={(e) => setFormData({ ...formData, matricula: e.target.value })}
-              placeholder="Ej: 20230001"
+              placeholder="Ej: EST-2026-001"
               style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
             />
           </div>
@@ -139,7 +139,6 @@ const StudentsPage = () => {
         </div>
       </div>
 
-      {/* TABLA DE RESULTADOS */}
       <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
         {loading ? (
           <div style={{ padding: '50px', textAlign: 'center', fontSize: '1.2rem', color: '#666' }}>
@@ -160,7 +159,7 @@ const StudentsPage = () => {
               <tbody>
                 {students.length > 0 ? (
                   students.map((student) => (
-                    <tr key={student._id} style={{ borderBottom: '1px solid #eee' }} className="table-row-hover">
+                    <tr key={student._id} style={{ borderBottom: '1px solid #eee' }}>
                       <td style={{ padding: '15px' }}><strong>{student.matricula}</strong></td>
                       <td style={{ padding: '15px' }}>{student.nombres} {student.apellidos}</td>
                       <td style={{ padding: '15px' }}>{student.grado}° "{student.seccion}"</td>
@@ -174,7 +173,7 @@ const StudentsPage = () => {
                             color: student.estado === 'activo' ? '#2e7d32' : '#c62828',
                             border: `1px solid ${student.estado === 'activo' ? '#2e7d32' : '#c62828'}`
                         }}>
-                          {student.estado === 'activo' ? 'ACTIVO' : 'INACTIVO'}
+                          {student.estado?.toUpperCase() || 'ACTIVO'}
                         </span>
                       </td>
                       <td style={{ padding: '15px', textAlign: 'center' }}>

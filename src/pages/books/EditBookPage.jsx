@@ -6,7 +6,6 @@ import { bookZodSchema } from '../../schemas/book';
 import ErrorMessage from '../../components/ErrorMessage';
 import { toast } from 'react-toastify';
 
-
 const EditBookPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -31,24 +30,23 @@ const EditBookPage = () => {
     const initPage = async () => {
       try {
         setLoading(true);
-        // Cargar categorías y datos del libro en paralelo
         const [catRes, bookRes] = await Promise.all([
           categoryService.getAll(),
           bookService.getById(id)
         ]);
 
         setCategories(catRes.data || []);
-        
-        const book = bookRes.data;
+        const book = bookRes.data || bookRes;
+
         setFormData({
-          isbn: book.isbn,
-          titulo: book.titulo,
-          autor: book.autor,
-          editorial: book.editorial,
-          anio: book.anio.toString(),
-          categoria: book.categoria?._id || book.categoria || '',
-          cantidadDisponible: book.cantidadDisponible.toString(),
-          ubicacion: book.ubicacion,
+          isbn: book.isbn || '',
+          titulo: book.titulo || '',
+          autor: book.autor || '',
+          editorial: book.editorial || '',
+          anio: book.anio?.toString() || '',
+          categoria: book.categoriaId?._id || book.categoriaId || '',
+          cantidadDisponible: book.cantidadDisponible?.toString() || '0',
+          ubicacion: book.ubicacion || '',
           descripcion: book.descripcion || ''
         });
       } catch (error) {
@@ -58,7 +56,6 @@ const EditBookPage = () => {
         setLoading(false);
       }
     };
-
     initPage();
   }, [id, navigate]);
 
@@ -77,25 +74,24 @@ const EditBookPage = () => {
       cantidadDisponible: parseInt(formData.cantidadDisponible)
     };
 
-    try {
-      const result = bookZodSchema.safeParse(dataToValidate);
-      
-      if (!result.success) {
-        const issues = result.error.issues.map(i => ({
-          campo: i.path[0],
-          mensaje: i.message
-        }));
-        setErrors(issues);
-        return;
-      }
+    const result = bookZodSchema.safeParse(dataToValidate);
+    if (!result.success) {
+      setErrors(result.error.issues.map(i => ({ campo: i.path[0], mensaje: i.message })));
+      return;
+    }
 
+    try {
       setSaving(true);
-      await bookService.update(id, dataToValidate);
-      toast.success('Información del libro actualizada');
+      // Traducción para el Backend
+      const dataToSave = {
+        ...dataToValidate,
+        categoriaId: formData.categoria
+      };
+      await bookService.update(id, dataToSave);
+      toast.success('Libro actualizado correctamente');
       navigate('/books');
     } catch (error) {
-      const msg = error.response?.data?.error || 'Error al actualizar el catálogo';
-      setErrors([{ campo: 'SERVER', mensaje: msg }]);
+      setErrors([{ campo: 'SERVER', mensaje: error.response?.data?.error || 'Error al actualizar' }]);
     } finally {
       setSaving(false);
     }
@@ -110,9 +106,6 @@ const EditBookPage = () => {
           <h2 className="page-title">✏️ Editar Libro</h2>
           <p className="page-description">Modificando: <strong>{formData.titulo}</strong></p>
         </div>
-        <button className="btn btn-secondary" onClick={() => navigate('/books')}>
-          ← Volver
-        </button>
       </div>
 
       <div className="form-card">
@@ -120,121 +113,36 @@ const EditBookPage = () => {
           <div className="form-grid">
             <div className="form-group">
               <label>ISBN:</label>
-              <input
-                type="text"
-                name="isbn"
-                value={formData.isbn}
-                onChange={handleChange}
-                className={errors.some(e => e.campo === 'isbn') ? 'input-error' : ''}
-              />
+              <input type="text" name="isbn" value={formData.isbn} onChange={handleChange} className={errors.some(e => e.campo === 'isbn') ? 'input-error' : ''} />
             </div>
-
             <div className="form-group">
               <label>Título:</label>
-              <input
-                type="text"
-                name="titulo"
-                value={formData.titulo}
-                onChange={handleChange}
-                className={errors.some(e => e.campo === 'titulo') ? 'input-error' : ''}
-              />
+              <input type="text" name="titulo" value={formData.titulo} onChange={handleChange} className={errors.some(e => e.campo === 'titulo') ? 'input-error' : ''} />
             </div>
-
             <div className="form-group">
               <label>Autor:</label>
-              <input
-                type="text"
-                name="autor"
-                value={formData.autor}
-                onChange={handleChange}
-                className={errors.some(e => e.campo === 'autor') ? 'input-error' : ''}
-              />
+              <input type="text" name="autor" value={formData.autor} onChange={handleChange} className={errors.some(e => e.campo === 'autor') ? 'input-error' : ''} />
             </div>
-
-            <div className="form-group">
-              <label>Editorial:</label>
-              <input
-                type="text"
-                name="editorial"
-                value={formData.editorial}
-                onChange={handleChange}
-                className={errors.some(e => e.campo === 'editorial') ? 'input-error' : ''}
-              />
-            </div>
-
             <div className="form-group">
               <label>Categoría:</label>
-              <select
-                name="categoria"
-                value={formData.categoria}
-                onChange={handleChange}
-                className={errors.some(e => e.campo === 'categoria') ? 'input-error' : ''}
-              >
+              <select name="categoria" value={formData.categoria} onChange={handleChange} className={errors.some(e => e.campo === 'categoria') ? 'input-error' : ''}>
                 <option value="">-- Seleccione Categoría --</option>
-                {categories.map(cat => (
-                  <option key={cat._id} value={cat._id}>{cat.nombre}</option>
-                ))}
+                {categories.map(cat => <option key={cat._id} value={cat._id}>{cat.nombre}</option>)}
               </select>
             </div>
-
             <div className="form-group">
               <label>Año de Edición:</label>
-              <input
-                type="number"
-                name="anio"
-                value={formData.anio}
-                onChange={handleChange}
-                className={errors.some(e => e.campo === 'anio') ? 'input-error' : ''}
-              />
+              <input type="number" name="anio" value={formData.anio} onChange={handleChange} />
             </div>
-
             <div className="form-group">
-              <label>Cantidad en Stock:</label>
-              <input
-                type="number"
-                name="cantidadDisponible"
-                value={formData.cantidadDisponible}
-                onChange={handleChange}
-                className={errors.some(e => e.campo === 'cantidadDisponible') ? 'input-error' : ''}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Ubicación:</label>
-              <input
-                type="text"
-                name="ubicacion"
-                value={formData.ubicacion}
-                onChange={handleChange}
-                className={errors.some(e => e.campo === 'ubicacion') ? 'input-error' : ''}
-              />
+              <label>Stock:</label>
+              <input type="number" name="cantidadDisponible" value={formData.cantidadDisponible} onChange={handleChange} />
             </div>
           </div>
-
-          <div className="form-group" style={{ marginTop: '1rem' }}>
-            <label>Descripción / Notas:</label>
-            <textarea
-              name="descripcion"
-              value={formData.descripcion}
-              onChange={handleChange}
-              rows="3"
-            />
-          </div>
-
           <ErrorMessage errors={errors} />
-
           <div className="button-group">
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Guardando cambios...' : 'Actualizar Libro'}
-            </button>
-            <button 
-              type="button" 
-              className="btn btn-secondary" 
-              onClick={() => navigate('/books')}
-              disabled={saving}
-            >
-              Cancelar
-            </button>
+            <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Guardando...' : 'Actualizar Libro'}</button>
+            <button type="button" className="btn-danger" onClick={() => navigate('/books')}>Cancelar</button>
           </div>
         </form>
       </div>

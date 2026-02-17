@@ -5,14 +5,10 @@ import { categoryZodSchema } from '../../schemas/category';
 import ErrorMessage from '../../components/ErrorMessage';
 import { toast } from 'react-toastify';
 
-
 const CreateCategoryPage = () => {
   const navigate = useNavigate();
-  
-  // Estado de errores como Array 
   const [errors, setErrors] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [formData, setFormData] = useState({
     codigo: '',
     nombre: '',
@@ -21,47 +17,29 @@ const CreateCategoryPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Limpiar errores al escribir
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (errors.length > 0) setErrors([]);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const resultado = categoryZodSchema.safeParse(formData);
     
-    try {
-      // 1. Validación con Zod 
-      const resultado = categoryZodSchema.safeParse(formData);
-      
-      if (!resultado.success) {
-        const listaErrores = resultado.error.issues.map(issue => ({
-          campo: issue.path[0],
-          mensaje: issue.message
-        }));
-        setErrors(listaErrores);
-        return;
-      }
+    if (!resultado.success) {
+      setErrors(resultado.error.issues.map(i => ({ 
+        campo: i.path[0], 
+        mensaje: i.message 
+      })));
+      return;
+    }
 
-      // 2. Envío de datos al servidor
+    try {
       setLoading(true);
       await categoryService.create(formData);
       toast.success('Categoría creada correctamente');
       navigate('/categories');
-
     } catch (error) {
-      let serverMessage = "";
-      if (error.response) {
-        // Error de respuesta del servidor 
-        serverMessage = error.response.data.error || 'Error en el servidor';
-      } else if (error.request) {
-        serverMessage = 'No se pudo conectar con el servidor';
-      } else {
-        serverMessage = error.message;
-      }
-      setErrors([{ campo: 'SERVER', mensaje: serverMessage }]);
+      setErrors([{ campo: 'SERVER', mensaje: error.response?.data?.error || 'Error en el servidor' }]);
     } finally {
       setLoading(false);
     }
@@ -82,51 +60,48 @@ const CreateCategoryPage = () => {
             <div className="form-group">
               <label>Código:</label>
               <input
-                type="text"
-                name="codigo"
-                value={formData.codigo}
+                type="text" 
+                name="codigo" 
+                value={formData.codigo} 
                 onChange={handleChange}
                 placeholder="Ej: CAT-001"
-                className={errors.some(e => e.campo === 'codigo') ? 'input-error' : ''}
               />
             </div>
-
             <div className="form-group">
               <label>Nombre de la Categoría:</label>
               <input
-                type="text"
-                name="nombre"
-                value={formData.nombre}
+                type="text" 
+                name="nombre" 
+                value={formData.nombre} 
                 onChange={handleChange}
                 placeholder="Ej: Ciencias Exactas"
-                className={errors.some(e => e.campo === 'nombre') ? 'input-error' : ''}
               />
             </div>
           </div>
 
-          <div className="form-group" style={{ marginTop: '1rem' }}>
+          <div className="form-group" style={{ marginTop: '20px' }}>
             <label>Descripción:</label>
             <textarea
-              name="descripcion"
-              value={formData.descripcion}
-              onChange={handleChange}
+              name="descripcion" 
+              value={formData.descripcion} 
+              onChange={handleChange} 
               rows="3"
-              placeholder="Breve descripción del tipo de libros en esta categoría..."
-            ></textarea>
+              placeholder="Breve descripción del tipo de libros..."
+              className="form-control"
+            />
           </div>
 
-          {/* Componente de visualización */}
-          <ErrorMessage errors={errors} />
+          {errors.length > 0 && (
+            <div style={{ marginTop: '20px' }}>
+              <ErrorMessage errors={errors} />
+            </div>
+          )}
 
           <div className="button-group">
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Guardando...' : 'Guardar Categoría'}
+            <button type="submit" disabled={loading} className="btn-primary">
+              {loading ? 'Guardando...' : '💾 Guardar Categoría'}
             </button>
-            <button 
-              type="button" 
-              className="btn btn-secondary" 
-              onClick={() => navigate('/categories')}
-            >
+            <button type="button" className="btn-danger" onClick={() => navigate('/categories')}>
               Cancelar
             </button>
           </div>

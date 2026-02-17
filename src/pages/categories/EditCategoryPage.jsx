@@ -5,11 +5,9 @@ import { categoryZodSchema } from '../../schemas/category';
 import ErrorMessage from '../../components/ErrorMessage';
 import { toast } from 'react-toastify';
 
-
 const EditCategoryPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
   
   const [errors, setErrors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,12 +19,19 @@ const EditCategoryPage = () => {
     descripcion: ''
   });
 
-  // Función equivalente a fetchProduct
   const fetchCategory = async () => {
     try {
       setLoading(true);
       const response = await categoryService.getById(id);
-      setFormData(response.data);
+      
+      // Ajuste defensivo: si el backend envía { data: {...} } o solo {...}
+      const data = response.data || response;
+      
+      setFormData({
+        codigo: data.codigo || '',
+        nombre: data.nombre || '',
+        descripcion: data.descripcion || ''
+      });
     } catch (error) {
       console.error('Error fetching category:', error);
       toast.error('No se pudo cargar la categoría');
@@ -53,11 +58,10 @@ const EditCategoryPage = () => {
       const resultado = categoryZodSchema.safeParse(formData);
       
       if (!resultado.success) {
-        const listaErrores = resultado.error.issues.map(issue => ({
+        setErrors(resultado.error.issues.map(issue => ({
           campo: issue.path[0],
           mensaje: issue.message
-        }));
-        setErrors(listaErrores);
+        })));
         return;
       }
 
@@ -68,14 +72,9 @@ const EditCategoryPage = () => {
       navigate('/categories');
 
     } catch (error) {
-      let serverMessage = "";
-      if (error.response) {
-        serverMessage = error.response.data.error || 'Error en el servidor';
-      } else if (error.request) {
-        serverMessage = 'No se pudo conectar con el servidor';
-      } else {
-        serverMessage = error.message;
-      }
+      const serverMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          'Error en el servidor';
       setErrors([{ campo: 'SERVER', mensaje: serverMessage }]);
     } finally {
       setSaving(false);
@@ -101,9 +100,11 @@ const EditCategoryPage = () => {
               <input
                 type="text"
                 name="codigo"
+                placeholder="Ej: MAT-01"
                 value={formData.codigo}
                 onChange={handleChange}
                 className={errors.some(e => e.campo === 'codigo') ? 'input-error' : ''}
+                disabled={saving}
               />
             </div>
 
@@ -112,9 +113,11 @@ const EditCategoryPage = () => {
               <input
                 type="text"
                 name="nombre"
+                placeholder="Ej: Matemáticas"
                 value={formData.nombre}
                 onChange={handleChange}
                 className={errors.some(e => e.campo === 'nombre') ? 'input-error' : ''}
+                disabled={saving}
               />
             </div>
           </div>
@@ -126,19 +129,20 @@ const EditCategoryPage = () => {
               value={formData.descripcion}
               onChange={handleChange}
               rows="4"
+              placeholder="Escribe una breve descripción..."
+              disabled={saving}
             ></textarea>
           </div>
 
-          {/* Componente de errores  */}
           <ErrorMessage errors={errors} />
 
           <div className="button-group">
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Actualizando...' : 'Actualizar Categoría'}
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? 'Actualizando...' : '💾 Guardar Cambios'}
             </button>
             <button 
               type="button" 
-              className="btn btn-secondary" 
+              className="btn-danger" 
               onClick={() => navigate('/categories')}
               disabled={saving}
             >

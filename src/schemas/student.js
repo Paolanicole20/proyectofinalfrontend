@@ -21,9 +21,7 @@ export const studentZodSchema = z.object({
 
   telefono: z
     .string({ required_error: 'El teléfono es requerido' })
-    .regex(/^\d{4}-\d{4}$/, 'Formato inválido. Use: ####-####')
-    .optional()
-    .or(z.literal('')),
+    .regex(/^\d{4}-\d{4}$/, 'Formato inválido (####-####)'), // Eliminado el optional para que coincida con el backend
 
   grado: z
     .string({ required_error: 'El grado es requerido' })

@@ -8,14 +8,19 @@ const LoansPage = () => {
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Función para obtener los préstamos
   const fetchLoans = async () => {
     try {
       setLoading(true);
-      const response = await loanService.getAll();
-      setLoans(response.data || []);
+      const res = await loanService.getAll();
+      
+      // El backend retorna el array directamente o dentro de .data
+      const dataArray = res.data || res; 
+      setLoans(Array.isArray(dataArray) ? dataArray : []);
+      
     } catch (error) {
-      console.error('Error al cargar préstamos:', error);
-      toast.error('No se pudo conectar con el servidor');
+      console.error("Error en fetchLoans:", error);
+      toast.error('Error al cargar la lista de préstamos');
     } finally {
       setLoading(false);
     }
@@ -25,18 +30,19 @@ const LoansPage = () => {
     fetchLoans();
   }, []);
 
+  // Función para eliminar un préstamo
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de eliminar este registro de préstamo?')) return;
-
+    if (!window.confirm('¿Está seguro de eliminar este registro de préstamo?')) return;
     try {
       await loanService.delete(id);
-      toast.success('Préstamo eliminado');
-      fetchLoans();
+      toast.success('Registro eliminado correctamente');
+      fetchLoans(); 
     } catch (error) {
-      toast.error('Error al intentar eliminar el préstamo');
+      toast.error('No se pudo eliminar el registro');
     }
   };
 
+  // Formateador de fechas
   const formatDate = (date) => {
     if (!date) return '---';
     return new Date(date).toLocaleDateString('es-SV', {
@@ -53,73 +59,86 @@ const LoansPage = () => {
       <div className="page-header">
         <div>
           <h2 className="page-title">📚 Gestión de Préstamos</h2>
-          <p className="page-description">Control de salida y entrada de libros</p>
+          <p className="page-description">Control de salida y entrada de libros de la biblioteca</p>
         </div>
-        <button 
-          className="btn btn-primary"
-          onClick={() => navigate('/loans/create')}
-        >
+        <button className="btn-primary" onClick={() => navigate('/loans/create')}>
           + Nuevo Préstamo
         </button>
       </div>
 
       <div className="table-card">
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Estudiante</th>
-                <th>Libro</th>
-                <th>Fecha Préstamo</th>
-                <th>Fecha Devolución</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loans.length > 0 ? (
-                loans.map((loan) => (
-                  <tr key={loan._id}>
-                    <td>
-                      <div className="user-info">
-                        <span className="user-name">{loan.estudiante?.nombres} {loan.estudiante?.apellidos}</span>
-                        <small className="user-sub">{loan.estudiante?.carnet}</small>
-                      </div>
-                    </td>
-                    <td>{loan.libro?.titulo || <span className="text-muted">Desconocido</span>}</td>
-                    <td>{formatDate(loan.fechaPrestamo)}</td>
-                    <td>{formatDate(loan.fechaDevolucionEsperada)}</td>
-                    <td>
-                      <span className={`status-badge ${loan.estado === 'activo' ? 'status-active' : 'status-returned'}`}>
-                        {loan.estado === 'activo' ? 'Pendiente' : 'Devuelto'}
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Estudiante</th>
+              <th>Libro</th>
+              <th>Vencimiento</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loans.length > 0 ? (
+              loans.map((loan) => (
+                <tr key={loan._id}>
+                  <td>
+                    <div className="user-info">
+                      {/* CORRECCIÓN: Usamos estudianteId porque así viene del backend .populate() */}
+                      <span className="user-name">
+                        {loan.estudianteId 
+                          ? `${loan.estudianteId.nombres} ${loan.estudianteId.apellidos}` 
+                          : 'Estudiante no encontrado'}
                       </span>
-                    </td>
-                    <td className="table-actions">
-                      <button 
-                        className="btn btn-info btn-small" 
-                        onClick={() => navigate(`/loans/edit/${loan._id}`)}
-                      >
-                        Editar
-                      </button>
-                      <button 
-                        className="btn btn-danger btn-small" 
-                        onClick={() => handleDelete(loan._id)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="no-data">
-                    No hay registros de préstamos disponibles.
+                      <small className="user-sub">
+                        {loan.estudianteId?.matricula || 'Sin Matrícula'}
+                      </small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="book-info">
+                      {/* CORRECCIÓN: Usamos libroId porque así viene del backend .populate() */}
+                      <span className="book-title" style={{ fontWeight: '500' }}>
+                        {loan.libroId?.titulo || 'Libro no encontrado'}
+                      </span>
+                      <br />
+                      <small className="text-muted">
+                        {loan.libroId?.autor || 'Autor desconocido'}
+                      </small>
+                    </div>
+                  </td>
+                  <td>{formatDate(loan.fechaDevolucionEsperada)}</td>
+                  <td>
+                    <span className={`status-badge ${loan.estado === 'activo' ? 'status-active' : 'status-returned'}`}>
+                      {loan.estado === 'activo' ? 'Pendiente' : 'Devuelto'}
+                    </span>
+                  </td>
+                  <td className="table-actions">
+                    <button 
+                      className="btn-table-edit" 
+                      onClick={() => navigate(`/loans/edit/${loan._id}`)}
+                      title="Editar"
+                    >
+                      ✏️ <span>Editar</span>
+                    </button>
+                    <button 
+                      className="btn-table-delete" 
+                      onClick={() => handleDelete(loan._id)}
+                      title="Eliminar"
+                    >
+                      🗑️ <span>Eliminar</span>
+                    </button>
                   </td>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: '#666' }}>
+                  No se encontraron préstamos registrados.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

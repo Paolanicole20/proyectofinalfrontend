@@ -1,12 +1,12 @@
-import axios from 'axios';
+import axiosInstance from '../api/axiosInstance'; 
 
-const BASE_URL = 'http://localhost:3000/api/returns';
+const ENDPOINT = '/returns';
 
 export const returnService = {
-  getAll: () => axios.get(BASE_URL),
-  getById: (id) => axios.get(`${BASE_URL}/${id}`),
-  create: (data) => axios.post(BASE_URL, data),
-  delete: (id) => axios.delete(`${BASE_URL}/${id}`)
+  getAll: () => axiosInstance.get(ENDPOINT),
+  getById: (id) => axiosInstance.get(`${ENDPOINT}/${id}`),
+  create: (data) => axiosInstance.post(ENDPOINT, data),
+  delete: (id) => axiosInstance.delete(`${ENDPOINT}/${id}`)
 };
 
 export default returnService;

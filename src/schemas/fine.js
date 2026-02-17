@@ -1,29 +1,24 @@
 import { z } from 'zod';
 
 export const fineZodSchema = z.object({
-  
-  estudianteId: z
+  // Acepta 'estudiante' que es el nombre en tu <select>
+  estudiante: z
     .string({ required_error: 'Debe seleccionar un estudiante' })
-    .min(1, 'El ID del estudiante es obligatorio'),
-
-  // Agregamos prestamoId 
-  prestamoId: z
-    .string({ required_error: 'La multa debe estar vinculada a un préstamo' })
-    .min(1, 'El ID del préstamo es obligatorio'),
-
+    .min(1, 'El estudiante es obligatorio'),
+    
   monto: z
-    .number({ 
-      required_error: 'El monto es requerido',
-      invalid_type_error: 'El monto debe ser un número' 
-    })
-    .positive('El monto debe ser mayor a cero'),
-
-  
+    .number({ required_error: 'El monto es obligatorio' })
+    .positive('El monto debe ser mayor a 0'),
+    
   motivo: z
-    .string()
-    .optional(),
-
+    .string({ required_error: 'El motivo es obligatorio' })
+    .min(5, 'El motivo debe tener al menos 5 caracteres'),
+    
+  fecha: z
+    .string({ required_error: 'La fecha es obligatoria' })
+    .min(1, 'Seleccione una fecha válida'),
+    
   estado: z
-    .enum(['pendiente', 'pagado'])
-    .default('pendiente'),
+    .enum(['pendiente', 'pagada'])
+    .default('pendiente')
 });

@@ -1,243 +1,197 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Box, TextField, Button, Typography, Container, 
-  Paper, Grid, Stack, MenuItem, Divider, CircularProgress,
-  InputAdornment
-} from '@mui/material';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { toast } from 'react-toastify';
-
-// Servicios y lógica
 import { fineService } from '../../services/fineService';
 import { studentService } from '../../services/studentService';
-import { fineZodSchema } from '../../schemas/fine';
+import { loanService } from '../../services/loanService'; 
 import ErrorMessage from '../../components/ErrorMessage';
+import { toast } from 'react-toastify';
 
 const CreateFinePage = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [students, setStudents] = useState([]);
+  const [loans, setLoans] = useState([]);
+  const [formData, setFormData] = useState({
+    estudiante: '', 
+    prestamoId: '', 
+    monto: '',
+    motivo: '',
+    fecha: new Date().toISOString().split('T')[0]
+  });
+  const [errors, setErrors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // 1. Carga inicial de datos
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        setLoading(true);
+        const [resStudents, resLoans] = await Promise.all([
+          studentService.getAll(),
+          loanService.getAll()
+        ]);
+        
+        // Extraer datos con validación de estructura
+        const dataStudents = resStudents.data || resStudents || [];
+        const dataLoans = resLoans.data || resLoans || [];
+        
+        console.log("Estudiantes cargados:", dataStudents);
+        console.log("Préstamos cargados:", dataLoans);
+
+        setStudents(Array.isArray(dataStudents) ? dataStudents : []);
+        setLoans(Array.isArray(dataLoans) ? dataLoans : []);
+      } catch (error) {
+        console.error("Error en carga inicial:", error);
+        toast.error('Error al conectar con el servidor');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInitialData();
+  }, []);
+
+  // 2. Limpiar préstamo si el estudiante cambia
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, prestamoId: '' }));
+  }, [formData.estudiante]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // 3. Filtrado de préstamos (Lógica reforzada)
+  const filteredLoans = loans.filter(l => {
+    if (!formData.estudiante) return false;
+    // Comparamos el ID del estudiante en el préstamo con el seleccionado
+    const loanStudentId = l.estudianteId?._id || l.estudianteId || l.estudiante?._id || l.estudiante;
+    return String(loanStudentId) === String(formData.estudiante);
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrors([]);
     
-    // Estados de datos
-    const [students, setStudents] = useState([]);
-    const [formData, setFormData] = useState({
-        estudiante: '',
-        monto: '',
-        motivo: '',
-        fecha: new Date().toISOString().split('T')[0]
-    });
-
-    // Estados de control y UI
-    const [errors, setErrors] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [fetchingStudents, setFetchingStudents] = useState(true);
-
-    // Cargar lista de estudiantes
-    const loadStudents = async () => {
-        try {
-            setFetchingStudents(true);
-            const response = await studentService.getAll();
-            setStudents(response.data || []);
-        } catch (error) {
-            toast.error('Error al cargar la lista de estudiantes');
-        } finally {
-            setFetchingStudents(false);
-        }
-    };
-
-    useEffect(() => {
-        loadStudents();
-    }, []);
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: name === 'monto' ? (value === '' ? '' : parseFloat(value)) : value
-        }));
-        if (errors.length > 0) setErrors([]);
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setErrors([]);
-
-        try {
-            // 1. Validar con Zod
-            const result = fineZodSchema.safeParse(formData);
-            if (!result.success) {
-                const issues = result.error.issues.map(i => ({
-                    campo: i.path[0],
-                    mensaje: i.message
-                }));
-                setErrors(issues);
-                return;
-            }
-
-            // 2. Enviar al servidor
-            setLoading(true);
-            await fineService.create(formData);
-            toast.success('Multa registrada exitosamente');
-            navigate('/fines');
-
-        } catch (error) {
-            const msg = error.response?.data?.error || 'Error al crear la multa';
-            setErrors([{ campo: 'SERVER', mensaje: msg }]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (fetchingStudents) {
-        return (
-            <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="60vh">
-                <CircularProgress sx={{ color: '#1a237e', mb: 2 }} />
-                <Typography color="textSecondary">Cargando base de datos de estudiantes...</Typography>
-            </Box>
-        );
+    if (!formData.estudiante || !formData.prestamoId || !formData.monto) {
+      toast.warning('Por favor complete los campos obligatorios');
+      return;
     }
 
-    return (
-        <Container maxWidth="md" sx={{ mt: 5, mb: 5 }}>
-            {/* Encabezado */}
-            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '5px solid #d32f2f', pl: 2 }}>
-                <Box>
-                    <Typography variant="h4" sx={{ color: '#1a237e', fontWeight: 800 }}>
-                        Registrar Multa
-                    </Typography>
-                    <Typography variant="body1" sx={{ color: '#64748b' }}>
-                        Asignación de cargos por daños, retrasos o extravíos
-                    </Typography>
-                </Box>
-                <Button 
-                    variant="outlined" 
-                    startIcon={<ArrowBackIcon />} 
-                    onClick={() => navigate('/fines')}
-                    sx={{ borderRadius: '10px', textTransform: 'none', color: '#64748b', borderColor: '#cbd5e1' }}
-                >
-                    Volver
-                </Button>
-            </Box>
+    try {
+      setSaving(true);
+      const payload = {
+        estudianteId: formData.estudiante, 
+        prestamoId: formData.prestamoId,
+        monto: Number(formData.monto),
+        motivo: formData.motivo.trim() || "Multa generada por el sistema",
+        estado: 'pendiente'
+      };
 
-            <Paper 
-                elevation={0} 
-                sx={{ 
-                    p: { xs: 3, md: 5 }, 
-                    borderRadius: '16px', 
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)'
-                }}
-            >
-                <Box component="form" onSubmit={handleSubmit} noValidate>
-                    <Grid container spacing={3}>
-                        {/* Estudiante */}
-                        <Grid item xs={12}>
-                            <TextField
-                                select
-                                fullWidth
-                                label="Estudiante responsable"
-                                name="estudiante"
-                                value={formData.estudiante}
-                                onChange={handleChange}
-                                error={errors.some(e => e.campo === 'estudiante')}
-                                helperText={errors.find(e => e.campo === 'estudiante')?.mensaje}
-                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
-                            >
-                                <MenuItem value="">-- Seleccione un estudiante --</MenuItem>
-                                {students.map(student => (
-                                    <MenuItem key={student._id} value={student._id}>
-                                        {student.carnet} - {student.nombres} {student.apellidos}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        </Grid>
+      await fineService.create(payload);
+      toast.success('Multa registrada correctamente');
+      navigate('/fines');
+    } catch (error) {
+      console.error("Error al guardar:", error.response?.data);
+      const msg = error.response?.data?.error || "Error al procesar el registro";
+      setErrors([{ campo: 'SERVER', mensaje: msg }]);
+    } finally {
+      setSaving(false);
+    }
+  };
 
-                        {/* Monto */}
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                type="number"
-                                label="Monto del cargo"
-                                name="monto"
-                                value={formData.monto}
-                                onChange={handleChange}
-                                placeholder="0.00"
-                                error={errors.some(e => e.campo === 'monto')}
-                                helperText={errors.find(e => e.campo === 'monto')?.mensaje}
-                                InputProps={{
-                                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                                    inputProps: { step: 0.01, min: 0 }
-                                }}
-                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
-                            />
-                        </Grid>
+  if (loading) return <div className="p-6">Cargando datos del sistema...</div>;
 
-                        {/* Fecha */}
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                type="date"
-                                label="Fecha de emisión"
-                                name="fecha"
-                                value={formData.fecha}
-                                onChange={handleChange}
-                                InputLabelProps={{ shrink: true }}
-                                error={errors.some(e => e.campo === 'fecha')}
-                                helperText={errors.find(e => e.campo === 'fecha')?.mensaje}
-                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
-                            />
-                        </Grid>
+  return (
+    <div className="page-container">
+      <div className="page-header">
+        <h2 className="page-title">Registrar Multa</h2>
+      </div>
 
-                        {/* Motivo */}
-                        <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                multiline
-                                rows={4}
-                                label="Concepto o Motivo detallado"
-                                name="motivo"
-                                value={formData.motivo}
-                                onChange={handleChange}
-                                placeholder="Describa el daño o el motivo del cargo..."
-                                error={errors.some(e => e.campo === 'motivo')}
-                                helperText={errors.find(e => e.campo === 'motivo')?.mensaje}
-                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
-                            />
-                        </Grid>
+      <div className="form-card">
+        <form onSubmit={handleSubmit}>
+          <div className="form-grid">
+            
+            {/* Selector de Estudiante */}
+            <div className="form-group">
+              <label className="form-label">Estudiante responsable</label>
+              <select 
+                name="estudiante" 
+                className="form-control"
+                value={formData.estudiante} 
+                onChange={handleChange}
+              >
+                <option value="">- Seleccione Estudiante -</option>
+                {students.map(s => (
+                  <option key={s._id} value={s._id}>
+                    {s.nombres} {s.apellidos} {s.carnet ? `(${s.carnet})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-                        <Grid item xs={12}>
-                            <Divider sx={{ my: 2, borderColor: '#f1f5f9' }} />
-                            <Stack direction="row" spacing={2} justifyContent="flex-end">
-                                <Button
-                                    type="submit"
-                                    variant="contained"
-                                    size="large"
-                                    disabled={loading}
-                                    startIcon={loading ? <CircularProgress size={20} /> : <AccountBalanceWalletIcon />}
-                                    sx={{ 
-                                        borderRadius: '10px', 
-                                        px: 4,
-                                        bgcolor: '#d32f2f', // Color rojo para denotar cargo/multa
-                                        '&:hover': { bgcolor: '#b71c1c' },
-                                        textTransform: 'none',
-                                        fontWeight: 'bold'
-                                    }}
-                                >
-                                    {loading ? 'Procesando...' : 'Registrar Multa'}
-                                </Button>
-                            </Stack>
-                        </Grid>
-                    </Grid>
-                </Box>
+            {/* Selector de Préstamo */}
+            <div className="form-group">
+              <label className="form-label">Préstamo asociado</label>
+              <select 
+                name="prestamoId" 
+                className={`form-control ${!formData.estudiante ? 'bg-gray-100' : ''}`}
+                value={formData.prestamoId} 
+                onChange={handleChange}
+                disabled={!formData.estudiante}
+              >
+                <option value="">
+                  {formData.estudiante ? '- Seleccione el Préstamo -' : 'Elija primero un estudiante'}
+                </option>
+                {filteredLoans.map(l => (
+                  <option key={l._id} value={l._id}>
+                    {l.libroId?.titulo || l.libro?.titulo || 'Libro'} - {new Date(l.fechaPrestamo).toLocaleDateString()}
+                  </option>
+                ))}
+              </select>
+              {formData.estudiante && filteredLoans.length === 0 && (
+                <p className="text-xs text-orange-600 mt-1">⚠️ No se encontraron préstamos activos para este alumno.</p>
+              )}
+            </div>
 
-                {errors.some(e => e.campo === 'SERVER') && (
-                    <Box sx={{ mt: 3 }}>
-                        <ErrorMessage errors={errors.filter(e => e.campo === 'SERVER')} />
-                    </Box>
-                )}
-            </Paper>
-        </Container>
-    );
+            <div className="form-group">
+              <label className="form-label">Monto ($)</label>
+              <input 
+                type="number" 
+                name="monto" 
+                className="form-control"
+                value={formData.monto} 
+                onChange={handleChange} 
+                step="0.01" 
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          <div className="form-group mt-4">
+            <label className="form-label">Motivo</label>
+            <textarea 
+              name="motivo" 
+              className="form-control"
+              value={formData.motivo} 
+              onChange={handleChange} 
+              rows="2"
+            />
+          </div>
+
+          <ErrorMessage errors={errors} />
+
+          <div className="form-actions mt-6">
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? 'Guardando...' : 'Confirmar Registro'}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={() => navigate('/fines')}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 export default CreateFinePage;

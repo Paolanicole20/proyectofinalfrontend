@@ -11,7 +11,6 @@ const EditLoanPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  // Estados de datos
   const [students, setStudents] = useState([]);
   const [books, setBooks] = useState([]);
   const [formData, setFormData] = useState({
@@ -22,12 +21,10 @@ const EditLoanPage = () => {
     estado: 'activo' 
   });
 
-  // Estados de control
   const [errors, setErrors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Función para cargar toda la información necesaria
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -37,12 +34,14 @@ const EditLoanPage = () => {
         bookService.getAll()
       ]);
 
-      const loan = resLoan.data;
+      // IMPORTANTE: Manejo de respuesta según cómo venga del backend
+      const loan = resLoan.data || resLoan; 
       
-      // Mapeo de datos para el formulario (extrayendo solo IDs y formateando fechas)
+      // Mapeo defensivo para que los selectores reconozcan el ID
       setFormData({
-        estudiante: loan.estudiante?._id || loan.estudiante,
-        libro: loan.libro?._id || loan.libro,
+        // Intentamos obtener el ID ya sea que venga poblado o solo el string
+        estudiante: loan.estudianteId?._id || loan.estudianteId || '',
+        libro: loan.libroId?._id || loan.libroId || '',
         fechaPrestamo: loan.fechaPrestamo?.split('T')[0] || '',
         fechaDevolucionEsperada: loan.fechaDevolucionEsperada?.split('T')[0] || '',
         estado: loan.estado || 'activo'
@@ -52,7 +51,6 @@ const EditLoanPage = () => {
       setBooks(resBooks.data || []);
 
     } catch (error) {
-      console.error('Error fetching loan data:', error);
       toast.error('No se pudo cargar la información del préstamo');
       navigate('/loans');
     } finally {
@@ -73,27 +71,35 @@ const EditLoanPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    try {
-      // 1. Validación con Zod
-      const resultado = loanZodSchema.safeParse(formData);
-      
-      if (!resultado.success) {
-        const listaErrores = resultado.error.issues.map(issue => ({
-          campo: issue.path[0],
-          mensaje: issue.message
-        }));
-        setErrors(listaErrores);
-        return;
-      }
+    // 1. Validación con Zod
+    const resultado = loanZodSchema.safeParse(formData);
+    
+    if (!resultado.success) {
+      setErrors(resultado.error.issues.map(issue => ({
+        campo: issue.path[0],
+        mensaje: issue.message
+      })));
+      return;
+    }
 
-      // 2. Envío al servidor
+    try {
       setSaving(true);
-      await loanService.update(id, formData);
+
+      // 2. TRADUCCIÓN PARA EL BACKEND (Crucial para evitar Error 400)
+      const dataParaEnviar = {
+        estudianteId: formData.estudiante,
+        libroId: formData.libro,
+        fechaPrestamo: formData.fechaPrestamo,
+        fechaDevolucionEsperada: formData.fechaDevolucionEsperada,
+        estado: formData.estado
+      };
+
+      await loanService.update(id, dataParaEnviar);
       toast.success('Préstamo actualizado correctamente');
       navigate('/loans');
 
     } catch (error) {
-      let serverMessage = error.response?.data?.error || 'Error al actualizar el préstamo';
+      const serverMessage = error.response?.data?.error || error.response?.data?.message || 'Error al actualizar';
       setErrors([{ campo: 'SERVER', mensaje: serverMessage }]);
     } finally {
       setSaving(false);
@@ -124,6 +130,7 @@ const EditLoanPage = () => {
                 className={errors.some(e => e.campo === 'estudiante') ? 'input-error' : ''}
                 disabled={saving}
               >
+                <option value="">-- Seleccionar Estudiante --</option>
                 {students.map(s => (
                   <option key={s._id} value={s._id}>
                     {s.carnet} - {s.nombres} {s.apellidos}
@@ -141,6 +148,7 @@ const EditLoanPage = () => {
                 className={errors.some(e => e.campo === 'libro') ? 'input-error' : ''}
                 disabled={saving}
               >
+                <option value="">-- Seleccionar Libro --</option>
                 {books.map(b => (
                   <option key={b._id} value={b._id}>
                     {b.titulo}
@@ -171,17 +179,29 @@ const EditLoanPage = () => {
               />
             </div>
 
+            <div className="form-group">
+              <label>Estado:</label>
+              <select 
+                name="estado" 
+                value={formData.estado} 
+                onChange={handleChange}
+              >
+                <option value="activo">Pendiente (Activo)</option>
+                <option value="devuelto">Devuelto</option>
+              </select>
+            </div>
+
           </div>
 
           <ErrorMessage errors={errors} />
 
           <div className="button-group">
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Guardando cambios...' : 'Actualizar Préstamo'}
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? 'Guardando cambios...' : '💾 Actualizar Préstamo'}
             </button>
             <button 
               type="button" 
-              className="btn btn-secondary" 
+              className="btn-danger" 
               onClick={() => navigate('/loans')}
               disabled={saving}
             >

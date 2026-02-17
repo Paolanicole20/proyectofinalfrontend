@@ -26,20 +26,10 @@ const CreateBookPage = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
-  // ==========================================
-  // BLOQUE DE DIAGNÓSTICO EN VIVO
-  // ==========================================
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        console.log("--- Iniciando petición de categorías ---");
         const response = await categoryService.getAll();
-        
-        // Imprimimos la respuesta completa para ver la estructura
-        console.log("Respuesta completa del servidor:", response);
-        console.log("Datos dentro de response.data:", response.data);
-
-        // Verificamos si es un array o viene dentro de otra propiedad
         const data = response.data;
         if (Array.isArray(data)) {
           setCategories(data);
@@ -48,20 +38,17 @@ const CreateBookPage = () => {
         } else if (data && Array.isArray(data.docs)) {
           setCategories(data.docs);
         } else {
-          console.error("El formato de datos no es un array conocido:", data);
           setCategories([]);
         }
-
       } catch (error) {
-        console.error("Error detallado en la petición:", error);
-        toast.error('Error al cargar catálogo de categorías. Revisa la consola (F12).');
+        console.error("Error al cargar categorías:", error);
+        toast.error('Error al cargar catálogo de categorías.');
       } finally {
         setFetching(false);
       }
     };
     loadCategories();
   }, []);
-  // ==========================================
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -89,7 +76,6 @@ const CreateBookPage = () => {
       navigate('/books');
 
     } catch (error) {
-      console.error("Error al guardar:", error);
       const msg = error.response?.data?.msg || 'Error al guardar el libro';
       setErrors([{ campo: 'SERVER', mensaje: msg }]);
     } finally {
@@ -100,140 +86,165 @@ const CreateBookPage = () => {
   if (fetching) return <div className="loading-state">Cargando categorías y recursos...</div>;
 
   return (
-    <div className="page-container">
-      <div className="page-header">
+    <div className="page-container" style={{ padding: '20px', maxWidth: '900px', margin: '0 auto' }}>
+      <div className="page-header" style={{ marginBottom: '20px', borderBottom: '1px solid #ddd', paddingBottom: '10px' }}>
         <div>
-          <h2 className="page-title">📖 Registro de Nuevo Libro</h2>
-          <p className="page-description">Complete la ficha técnica para el inventario</p>
+          <h2 style={{ color: '#1a237e', margin: 0 }}>📖 Registro de Nuevo Libro</h2>
+          <p style={{ color: '#666', margin: '5px 0' }}>Complete la ficha técnica para el inventario</p>
         </div>
       </div>
 
-      <div className="form-card">
+      <div className="form-card" style={{ background: '#fff', padding: '25px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
         <form onSubmit={handleSubmit}>
-          <div className="form-grid">
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            
             <div className="form-group">
-              <label>ISBN / Código de Barras:</label>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>ISBN / Código de Barras:</label>
               <input
                 type="text"
                 name="isbn"
                 value={formData.isbn}
                 onChange={handleChange}
                 placeholder="Ej: 978-607-313-433-0"
-                className={errors.some(e => e.campo === 'isbn') ? 'input-error' : ''}
+                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
               />
             </div>
 
             <div className="form-group">
-              <label>Título de la Obra:</label>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Título de la Obra:</label>
               <input
                 type="text"
                 name="titulo"
                 value={formData.titulo}
                 onChange={handleChange}
-                className={errors.some(e => e.campo === 'titulo') ? 'input-error' : ''}
+                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
               />
             </div>
 
             <div className="form-group">
-              <label>Autor(es):</label>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Autor(es):</label>
               <input
                 type="text"
                 name="autor"
                 value={formData.autor}
                 onChange={handleChange}
-                className={errors.some(e => e.campo === 'autor') ? 'input-error' : ''}
+                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
               />
             </div>
 
             <div className="form-group">
-              <label>Editorial:</label>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Editorial:</label>
               <input
                 type="text"
                 name="editorial"
                 value={formData.editorial}
                 onChange={handleChange}
-                className={errors.some(e => e.campo === 'editorial') ? 'input-error' : ''}
+                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
               />
             </div>
 
             <div className="form-group">
-              <label>Categoría / Género:</label>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Categoría / Género:</label>
               <select
                 name="categoryId"
                 value={formData.categoryId}
                 onChange={handleChange}
-                className={errors.some(e => e.campo === 'categoryId') ? 'input-error' : ''}
+                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
               >
                 <option value="">-- Seleccione Categoría --</option>
-                {/* Renderizado defensivo: probamos con .nombre y con .name */}
                 {categories.map(cat => (
                   <option key={cat._id} value={cat._id}>
                     {cat.nombre || cat.name || "Sin nombre"}
                   </option>
                 ))}
               </select>
-              {categories.length === 0 && (
-                <small style={{ color: 'orange' }}>⚠️ No se encontraron categorías en la base de datos.</small>
-              )}
             </div>
 
             <div className="form-group">
-              <label>Año de Edición:</label>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Año de Edición:</label>
               <input
                 type="number"
                 name="anioPublicacion"
                 value={formData.anioPublicacion}
                 onChange={handleChange}
-                className={errors.some(e => e.campo === 'anioPublicacion') ? 'input-error' : ''}
+                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
               />
             </div>
 
             <div className="form-group">
-              <label>Cantidad de Ejemplares:</label>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Cantidad de Ejemplares:</label>
               <input
                 type="number"
                 name="cantidadDisponible"
                 value={formData.cantidadDisponible}
                 onChange={handleChange}
-                className={errors.some(e => e.campo === 'cantidadDisponible') ? 'input-error' : ''}
+                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
               />
             </div>
 
             <div className="form-group">
-              <label>Ubicación Física:</label>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ubicación Física:</label>
               <input
                 type="text"
                 name="ubicacion"
                 value={formData.ubicacion}
                 onChange={handleChange}
                 placeholder="Ej: Estante A-13"
-                className={errors.some(e => e.campo === 'ubicacion') ? 'input-error' : ''}
+                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
               />
             </div>
           </div>
 
-          <div className="form-group" style={{ marginTop: '1rem' }}>
-            <label>Resumen / Descripción:</label>
+          <div className="form-group" style={{ marginTop: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Resumen / Descripción:</label>
             <textarea
               name="descripcion"
               value={formData.descripcion}
               onChange={handleChange}
               rows="3"
+              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', resize: 'vertical' }}
             />
           </div>
 
-          <ErrorMessage errors={errors} />
+          <div style={{ marginTop: '15px' }}>
+            <ErrorMessage errors={errors} />
+          </div>
 
-          <div className="button-group" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-            <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={loading}>
-              {loading ? 'Guardando...' : 'Registrar Libro'}
+          {/* SECCIÓN DE BOTONES ACTUALIZADA SEGÚN TU IMAGEN */}
+          <div style={{ marginTop: '30px', display: 'flex', gap: '10px' }}>
+            <button 
+              type="submit" 
+              disabled={loading} 
+              style={{ 
+                background: '#1a237e', 
+                color: 'white', 
+                padding: '10px 20px', 
+                border: 'none', 
+                borderRadius: '4px', 
+                cursor: 'pointer', 
+                flex: 1,
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              {loading ? 'Guardando...' : '💾 Registrar Libro'}
             </button>
             <button 
               type="button" 
-              className="btn btn-secondary" 
-              style={{ flex: 1, backgroundColor: '#6c757d', color: 'white' }} 
-              onClick={() => navigate('/books')}
+              onClick={() => navigate('/books')} 
               disabled={loading}
+              style={{ 
+                background: '#f44336', 
+                color: 'white', 
+                padding: '10px 20px', 
+                border: 'none', 
+                borderRadius: '4px', 
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
             >
               Cancelar
             </button>

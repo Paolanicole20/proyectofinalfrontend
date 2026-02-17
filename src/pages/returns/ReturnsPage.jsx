@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { returnService } from '../../services/returnService';
 import { toast } from 'react-toastify';
 
-
 const ReturnsPage = () => {
   const navigate = useNavigate();
   const [returns, setReturns] = useState([]);
@@ -25,6 +24,19 @@ const ReturnsPage = () => {
   useEffect(() => {
     fetchReturns();
   }, []);
+
+  // --- Nueva función para eliminar ---
+  const handleDelete = async (id) => {
+    if (window.confirm('¿Estás seguro de eliminar este registro de devolución?')) {
+      try {
+        await returnService.delete(id);
+        setReturns(returns.filter(item => item._id !== id));
+        toast.success('Registro eliminado correctamente');
+      } catch (error) {
+        toast.error('Error al eliminar el registro');
+      }
+    }
+  };
 
   const formatDate = (date) => {
     if (!date) return '---';
@@ -63,6 +75,7 @@ const ReturnsPage = () => {
                 <th>Estado Físico</th>
                 <th>Retraso</th>
                 <th>Observaciones</th>
+                <th className="text-center">Acciones</th> {/* <-- Encabezado añadido */}
               </tr>
             </thead>
             <tbody>
@@ -98,11 +111,32 @@ const ReturnsPage = () => {
                     <td className="text-small">
                       {item.observaciones || <span className="text-muted italic">Sin notas</span>}
                     </td>
+                    {/* --- CELDAS DE ACCIÓN AÑADIDAS --- */}
+                    <td className="text-center">
+                      <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                        <button 
+                          className="btn-action edit"
+                          onClick={() => navigate(`/returns/edit/${item._id}`)}
+                          style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer' }}
+                          title="Editar"
+                        >
+                          ✏️ Editar
+                        </button>
+                        <button 
+                          className="btn-action delete"
+                          onClick={() => handleDelete(item._id)}
+                          style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer' }}
+                          title="Eliminar"
+                        >
+                          🗑️ Eliminar
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="no-data">
+                  <td colSpan="7" className="no-data"> {/* <-- Colspan actualizado a 7 */}
                     No hay devoluciones registradas en el sistema.
                   </td>
                 </tr>

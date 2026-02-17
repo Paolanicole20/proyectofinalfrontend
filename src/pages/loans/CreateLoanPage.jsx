@@ -9,8 +9,6 @@ import { toast } from 'react-toastify';
 
 const CreateLoanPage = () => {
   const navigate = useNavigate();
-  
-  // Estados para selectores y control
   const [students, setStudents] = useState([]);
   const [books, setBooks] = useState([]);
   const [errors, setErrors] = useState([]);
@@ -24,7 +22,6 @@ const CreateLoanPage = () => {
     fechaDevolucionEsperada: ''
   });
 
-  // Carga inicial de datos para los selectores
   const loadFormData = async () => {
     try {
       setFetchingData(true);
@@ -33,7 +30,6 @@ const CreateLoanPage = () => {
         bookService.getAll()
       ]);
       setStudents(resStudents.data || []);
-      // Filtramos libros que tengan stock disponible 
       setBooks(resBooks.data || []);
     } catch (error) {
       toast.error('Error al cargar información necesaria');
@@ -42,9 +38,7 @@ const CreateLoanPage = () => {
     }
   };
 
-  useEffect(() => {
-    loadFormData();
-  }, []);
+  useEffect(() => { loadFormData(); }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -55,33 +49,38 @@ const CreateLoanPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    try {
-      // 1. Validación con Zod
-      const resultado = loanZodSchema.safeParse(formData);
-      
-      if (!resultado.success) {
-        const listaErrores = resultado.error.issues.map(issue => ({
-          campo: issue.path[0],
-          mensaje: issue.message
-        }));
-        setErrors(listaErrores);
-        return;
-      }
+    // 1. Validar localmente con Zod
+    const resultado = loanZodSchema.safeParse(formData);
+    
+    if (!resultado.success) {
+      setErrors(resultado.error.issues.map(i => ({ 
+        campo: i.path[0], 
+        mensaje: i.message 
+      })));
+      return;
+    }
 
-      // 2. Envío al servidor
+    try {
       setLoading(true);
-      await loanService.create(formData);
+
+      // 2. "TRADUCCIÓN" PARA EL BACKEND:
+      // Cambiamos los nombres de las llaves para que el API las entienda (Error 400 fix)
+      const dataParaEnviar = {
+        estudianteId: formData.estudiante, 
+        libroId: formData.libro,           
+        fechaPrestamo: formData.fechaPrestamo,
+        fechaDevolucionEsperada: formData.fechaDevolucionEsperada
+      };
+
+      await loanService.create(dataParaEnviar); 
+      
       toast.success('Préstamo registrado correctamente');
       navigate('/loans');
-
     } catch (error) {
-      let serverMessage = "";
-      if (error.response) {
-        serverMessage = error.response.data.error || 'Error en el servidor';
-      } else {
-        serverMessage = 'No se pudo conectar con el servidor';
-      }
-      setErrors([{ campo: 'SERVER', mensaje: serverMessage }]);
+      // Si el servidor responde con 400, capturamos el mensaje exacto
+      const serverMsg = error.response?.data?.error || error.response?.data?.message || 'Error en el servidor';
+      setErrors([{ campo: 'SERVER', mensaje: serverMsg }]);
+      toast.error(serverMsg);
     } finally {
       setLoading(false);
     }
@@ -101,12 +100,12 @@ const CreateLoanPage = () => {
       <div className="form-card">
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
-            
+            {/* Selector de Estudiante */}
             <div className="form-group">
               <label>Estudiante:</label>
-              <select
-                name="estudiante"
-                value={formData.estudiante}
+              <select 
+                name="estudiante" 
+                value={formData.estudiante} 
                 onChange={handleChange}
                 className={errors.some(e => e.campo === 'estudiante') ? 'input-error' : ''}
               >
@@ -119,11 +118,12 @@ const CreateLoanPage = () => {
               </select>
             </div>
 
+            {/* Selector de Libro */}
             <div className="form-group">
               <label>Libro a prestar:</label>
-              <select
-                name="libro"
-                value={formData.libro}
+              <select 
+                name="libro" 
+                value={formData.libro} 
                 onChange={handleChange}
                 className={errors.some(e => e.campo === 'libro') ? 'input-error' : ''}
               >
@@ -136,41 +136,40 @@ const CreateLoanPage = () => {
               </select>
             </div>
 
+            {/* Fecha Prestamo */}
             <div className="form-group">
               <label>Fecha de Salida:</label>
-              <input
-                type="date"
-                name="fechaPrestamo"
-                value={formData.fechaPrestamo}
-                onChange={handleChange}
-                className={errors.some(e => e.campo === 'fechaPrestamo') ? 'input-error' : ''}
+              <input 
+                type="date" 
+                name="fechaPrestamo" 
+                value={formData.fechaPrestamo} 
+                onChange={handleChange} 
               />
             </div>
 
+            {/* Fecha Devolución */}
             <div className="form-group">
               <label>Fecha Devolución Programada:</label>
-              <input
-                type="date"
-                name="fechaDevolucionEsperada"
-                value={formData.fechaDevolucionEsperada}
-                onChange={handleChange}
-                className={errors.some(e => e.campo === 'fechaDevolucionEsperada') ? 'input-error' : ''}
+              <input 
+                type="date" 
+                name="fechaDevolucionEsperada" 
+                value={formData.fechaDevolucionEsperada} 
+                onChange={handleChange} 
               />
             </div>
-
           </div>
 
-          <ErrorMessage errors={errors} />
+          {errors.length > 0 && (
+            <div className="error-box" style={{ marginTop: '20px', color: '#b91c1c', backgroundColor: '#fef2f2', padding: '10px', borderRadius: '6px' }}>
+              <ErrorMessage errors={errors} />
+            </div>
+          )}
 
           <div className="button-group">
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Procesando...' : 'Confirmar Préstamo'}
+            <button type="submit" disabled={loading} className="btn-primary">
+              {loading ? 'Procesando...' : '💾 Confirmar Préstamo'}
             </button>
-            <button 
-              type="button" 
-              className="btn btn-secondary" 
-              onClick={() => navigate('/loans')}
-            >
+            <button type="button" className="btn-danger" onClick={() => navigate('/loans')}>
               Cancelar
             </button>
           </div>

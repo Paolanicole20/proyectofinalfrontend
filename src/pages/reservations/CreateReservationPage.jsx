@@ -50,12 +50,25 @@ const CreateReservationPage = () => {
                 bookService.getAll()
             ]);
             
-            // Filtrar solo estudiantes activos y libros con stock disponible
-            setStudents(resStudents.data?.filter(s => s.estado === 'activo') || []);
-            setBooks(resBooks.data?.filter(b => b.ejemplaresDisponibles > 0) || []);
+            // Normalización: Extraer datos si vienen en .data o directo
+            const rawStudents = resStudents.data || resStudents || [];
+            const rawBooks = resBooks.data || resBooks || [];
+
+            // Filtrar y asegurar que sean arrays
+            const filteredStudents = Array.isArray(rawStudents) 
+                ? rawStudents.filter(s => s.estado === 'activo') 
+                : [];
+                
+            const filteredBooks = Array.isArray(rawBooks) 
+                ? rawBooks.filter(b => b.ejemplaresDisponibles > 0) 
+                : [];
+
+            setStudents(filteredStudents);
+            setBooks(filteredBooks);
             
         } catch (error) {
-            toast.error('Error al cargar catálogos para la reservación');
+            console.error("Error cargando catálogos:", error);
+            toast.error('Error al cargar la información del sistema');
         } finally {
             setFetching(false);
         }
@@ -75,9 +88,8 @@ const CreateReservationPage = () => {
         e.preventDefault();
 
         try {
-            // 1. Validar con Zod
+            // Validar con Zod
             const result = reservationZodSchema.safeParse(formData);
-            
             if (!result.success) {
                 const issues = result.error.issues.map(i => ({
                     campo: i.path[0],
@@ -88,7 +100,15 @@ const CreateReservationPage = () => {
             }
 
             setLoading(true);
-            await reservationService.create(formData);
+            // El backend suele esperar los campos con el sufijo "Id"
+            const payload = {
+                estudianteId: formData.estudiante,
+                libroId: formData.libro,
+                fechaReservacion: formData.fechaReservacion,
+                fechaVencimiento: formData.fechaVencimiento
+            };
+
+            await reservationService.create(payload);
             toast.success('Reservación confirmada correctamente');
             navigate('/reservations');
 
@@ -104,14 +124,13 @@ const CreateReservationPage = () => {
         return (
             <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="60vh">
                 <CircularProgress sx={{ color: '#1a237e', mb: 2 }} />
-                <Typography color="textSecondary">Sincronizando disponibilidad de libros...</Typography>
+                <Typography color="textSecondary">Sincronizando disponibilidad...</Typography>
             </Box>
         );
     }
 
     return (
         <Container maxWidth="md" sx={{ mt: 5, mb: 5 }}>
-            {/* Encabezado con identidad visual */}
             <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '5px solid #1a237e', pl: 2 }}>
                 <Box>
                     <Typography variant="h4" sx={{ color: '#1a237e', fontWeight: 800 }}>
@@ -142,6 +161,7 @@ const CreateReservationPage = () => {
             >
                 <Box component="form" onSubmit={handleSubmit} noValidate>
                     <Grid container spacing={3}>
+                        
                         {/* Selector de Estudiante */}
                         <Grid item xs={12}>
                             <TextField
@@ -222,7 +242,7 @@ const CreateReservationPage = () => {
                                     size="large"
                                     type="submit"
                                     disabled={loading}
-                                    startIcon={loading ? <CircularProgress size={20} /> : <CalendarMonthIcon />}
+                                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <CalendarMonthIcon />}
                                     sx={{ 
                                         borderRadius: '10px', 
                                         px: 4,

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { bookService } from '../../services/bookService';
 import { toast } from 'react-toastify';
 
-
 const BooksPage = () => {
   const navigate = useNavigate();
   const [books, setBooks] = useState([]);
@@ -15,29 +14,22 @@ const BooksPage = () => {
       const response = await bookService.getAll();
       setBooks(response.data || []);
     } catch (error) {
-      console.error('Error al cargar libros:', error);
-      toast.error('No se pudo establecer conexión con el catálogo de libros');
+      toast.error('Error al sincronizar catálogo');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadBooks();
-  }, []);
+  useEffect(() => { loadBooks(); }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Está seguro de eliminar este libro? Esta acción no se puede deshacer si el libro tiene préstamos asociados.')) {
-      return;
-    }
-
+    if (!window.confirm('¿Desea retirar este libro del inventario?')) return;
     try {
       await bookService.delete(id);
-      toast.success('Libro retirado del catálogo correctamente');
+      toast.success('Libro eliminado correctamente');
       loadBooks();
     } catch (error) {
-      const errorMsg = error.response?.data?.message || 'No se puede eliminar un libro con historial activo';
-      toast.error(errorMsg);
+      toast.error('No se puede eliminar: el libro tiene préstamos activos');
     }
   };
 
@@ -48,91 +40,52 @@ const BooksPage = () => {
       <div className="page-header">
         <div>
           <h2 className="page-title">📖 Gestión de Libros</h2>
-          <p className="page-description">Control de inventario, títulos y disponibilidad</p>
+          <p className="page-description">Control de inventario y títulos</p>
         </div>
-        <button 
-          className="btn btn-primary"
-          onClick={() => navigate('/books/create')}
-        >
-          + Nuevo Libro
-        </button>
+        <button className="btn-primary" onClick={() => navigate('/books/create')}>+ Nuevo Libro</button>
       </div>
 
       <div className="table-card">
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>ISBN</th>
-                <th>Información del Libro</th>
-                <th>Categoría</th>
-                <th>Stock</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>ISBN</th>
+              <th>Información del Libro</th>
+              <th>Stock</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {books.map((book) => (
+              <tr key={book._id}>
+                <td style={{ fontFamily: 'monospace' }}>{book.isbn}</td>
+                <td>
+                  <div className="user-info">
+                    <span className="user-name">{book.titulo}</span>
+                    <small className="user-sub">{book.autor}</small>
+                  </div>
+                </td>
+                <td>{book.cantidadDisponible} / {book.cantidadTotal}</td>
+                <td>
+                  <span className={`status-badge ${book.cantidadDisponible > 0 ? 'status-active' : 'status-danger'}`}>
+                    {book.cantidadDisponible > 0 ? 'Disponible' : 'Agotado'}
+                  </span>
+                </td>
+                <td className="table-actions">
+                  <button className="btn-table-edit" onClick={() => navigate(`/books/edit/${book._id}`)}>
+                    ✏️ <span>Editar</span>
+                  </button>
+                  <button className="btn-table-delete" onClick={() => handleDelete(book._id)}>
+                    🗑️ <span>Eliminar</span>
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {books.length > 0 ? (
-                books.map((book) => (
-                  <tr key={book._id}>
-                    <td className="font-mono text-small">{book.isbn}</td>
-                    <td>
-                      <div className="user-info">
-                        <span className="user-name">{book.titulo}</span>
-                        <small className="user-sub">{book.autor}</small>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="category-tag">
-                        {book.categoria?.nombre || 'General'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="stock-info">
-                        <span className="stock-current">{book.cantidadDisponible}</span>
-                        <small className="stock-total">/ {book.cantidadTotal || book.cantidadDisponible}</small>
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`status-badge ${
-                        book.cantidadDisponible > 0 ? 'status-active' : 'status-danger'
-                      }`}>
-                        {book.cantidadDisponible > 0 ? 'Disponible' : 'Agotado'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="table-actions">
-                        <button 
-                          className="btn btn-info btn-small"
-                          onClick={() => navigate(`/books/edit/${book._id}`)}
-                          title="Editar detalles del libro"
-                        >
-                          ✏️
-                        </button>
-                        <button 
-                          className="btn btn-danger btn-small"
-                          onClick={() => handleDelete(book._id)}
-                          title="Eliminar del catálogo"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="no-data">
-                    No se encontraron libros registrados en la biblioteca.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 };
-
 export default BooksPage;

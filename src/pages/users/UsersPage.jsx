@@ -1,72 +1,68 @@
-import { getUsers } from '../../services/userService';
+import { getUsers, deleteUser } from '../../services/userService';
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const UsersPage = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [formData, setFormData] = useState({
-        nombre: '',
-        rol: '' 
-    });
+    const [formData, setFormData] = useState({ nombre: '' });
     const navigate = useNavigate();
 
     const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
             const response = await getUsers(formData);
-            if (response && response.data && Array.isArray(response.data)) {
-                setUsers(response.data);
-            } else {
-                setUsers([]);
-            }
+            setUsers(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
-            console.error('Error fetching Users:', error);
-            setUsers([]);
+            toast.error('Error al cargar usuarios');
         } finally {
             setLoading(false);
         }
     }, [formData]);
 
-    useEffect(() => {
-        fetchUsers();
-    }, []);
+    useEffect(() => { fetchUsers(); }, []);
 
-    if (loading) return <div className="page-container"><div className="loader">Cargando usuarios...</div></div>;
+    const handleDelete = async (id) => {
+        if (!window.confirm('¿Está seguro de eliminar este usuario?')) return;
+        try {
+            await deleteUser(id);
+            toast.success('Usuario eliminado');
+            fetchUsers();
+        } catch (error) {
+            toast.error('Error al eliminar usuario');
+        }
+    };
+
+    if (loading) return <div className="loading-state">Cargando usuarios...</div>;
 
     return (
         <div className="page-container">
-            {/* Cabecera usando tu clase .page-header y .page-title */}
             <div className="page-header">
                 <div>
                     <h1 className="page-title">👥 Gestión de Usuarios</h1>
-                    <p style={{ color: '#64748b', margin: '5px 0 0 0' }}>Administración de accesos y perfiles</p>
+                    <p className="page-description">Administración de accesos y perfiles del personal</p>
                 </div>
                 <button className="btn-primary" onClick={() => navigate('/users/create')}>
                     + Nuevo Usuario
                 </button>
             </div>
 
-            {/* Sección de búsqueda usando .search-section y .search-form de tu CSS */}
             <div className="search-section">
                 <div className="search-form">
                     <div className="form-group-inline">
                         <label>Buscar por nombre:</label>
                         <input
                             type="text"
-                            placeholder="Escribe un nombre..."
+                            placeholder="Ej: Juan Pérez"
                             value={formData.nombre}
                             onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                         />
                     </div>
-                    {/* Reutilizamos btn-primary para el filtro o puedes usar un estilo similar */}
-                    <button className="btn-primary" style={{ padding: '8px 20px' }} onClick={fetchUsers}>
-                        Filtrar
-                    </button>
+                    <button className="btn-primary" onClick={fetchUsers}>Filtrar</button>
                 </div>
             </div>
 
-            {/* Tabla usando .table-card y .data-table de tu CSS */}
             <div className="table-card">
                 <table className="data-table">
                     <thead>
@@ -78,43 +74,29 @@ const UsersPage = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {users.length > 0 ? (
-                            users.map((user) => (
-                                <tr key={user._id}>
-                                    <td style={{ fontWeight: '600' }}>
-                                        {`${user.nombre || ''} ${user.apellido || ''}`}
-                                    </td>
-                                    <td>{user.email}</td>
-                                    <td>
-                                        {/* Usamos tu badge-success para el rol de Admin */}
-                                        <span className={user.role === 'ADMIN_ROLE' ? 'badge-success' : ''} 
-                                              style={user.role !== 'ADMIN_ROLE' ? { background: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '99px', fontSize: '12px'} : {}}>
-                                            {user.role}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button
-                                            className="btn-primary"
-                                            style={{ padding: '5px 12px', fontSize: '0.8rem', backgroundColor: '#64748b' }}
-                                            onClick={() => navigate(`/users/edit/${user._id}`)}
-                                        >
-                                            Editar
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
-                                    No se encontraron usuarios en la base de datos.
+                        {users.map((user) => (
+                            <tr key={user._id}>
+                                <td className="user-name">{`${user.nombre} ${user.apellido}`}</td>
+                                <td>{user.email}</td>
+                                <td>
+                                    <span className={user.role === 'ADMIN_ROLE' ? 'badge-success' : 'status-badge status-returned'}>
+                                        {user.role}
+                                    </span>
+                                </td>
+                                <td className="table-actions">
+                                    <button className="btn-table-edit" onClick={() => navigate(`/users/edit/${user._id}`)}>
+                                        ✏️ <span>Editar</span>
+                                    </button>
+                                    <button className="btn-table-delete" onClick={() => handleDelete(user._id)}>
+                                        🗑️ <span>Eliminar</span>
+                                    </button>
                                 </td>
                             </tr>
-                        )}
+                        ))}
                     </tbody>
                 </table>
             </div>
         </div>
     );
-}
-
+};
 export default UsersPage;
