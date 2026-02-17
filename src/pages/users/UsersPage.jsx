@@ -11,22 +11,18 @@ const UsersPage = () => {
     });
     const navigate = useNavigate();
 
-    // Usamos useCallback para evitar recrear la función en cada renderizado
     const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
             const response = await getUsers(formData);
-            
-            // CORRECCIÓN CRÍTICA: Validamos que response.data exista y sea un array
             if (response && response.data && Array.isArray(response.data)) {
                 setUsers(response.data);
             } else {
-                console.warn('La respuesta no es un array válido:', response.data);
-                setUsers([]); // Resetear a array vacío para evitar que .map() falle
+                setUsers([]);
             }
         } catch (error) {
             console.error('Error fetching Users:', error);
-            setUsers([]); // Si hay error, mantenemos el array vacío
+            setUsers([]);
         } finally {
             setLoading(false);
         }
@@ -34,34 +30,45 @@ const UsersPage = () => {
 
     useEffect(() => {
         fetchUsers();
-    }, []); // Se ejecuta al montar el componente
+    }, []);
+
+    if (loading) return <div className="page-container"><div className="loader">Cargando usuarios...</div></div>;
 
     return (
         <div className="page-container">
+            {/* Cabecera usando tu clase .page-header y .page-title */}
             <div className="page-header">
-                <h1>👥 Gestión de Usuarios</h1>
-                <button className="btn btn-primary" onClick={() => navigate('/users/create')}>
+                <div>
+                    <h1 className="page-title">👥 Gestión de Usuarios</h1>
+                    <p style={{ color: '#64748b', margin: '5px 0 0 0' }}>Administración de accesos y perfiles</p>
+                </div>
+                <button className="btn-primary" onClick={() => navigate('/users/create')}>
                     + Nuevo Usuario
                 </button>
             </div>
 
-            <div className="filters-container">
-                <div className="filter-group">
-                    <label>Buscar por nombre:</label>
-                    <input
-                        type="text"
-                        placeholder="Escribe un nombre..."
-                        value={formData.nombre}
-                        onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                    />
+            {/* Sección de búsqueda usando .search-section y .search-form de tu CSS */}
+            <div className="search-section">
+                <div className="search-form">
+                    <div className="form-group-inline">
+                        <label>Buscar por nombre:</label>
+                        <input
+                            type="text"
+                            placeholder="Escribe un nombre..."
+                            value={formData.nombre}
+                            onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                        />
+                    </div>
+                    {/* Reutilizamos btn-primary para el filtro o puedes usar un estilo similar */}
+                    <button className="btn-primary" style={{ padding: '8px 20px' }} onClick={fetchUsers}>
+                        Filtrar
+                    </button>
                 </div>
-                <button className="btn btn-search" onClick={fetchUsers}>Filtrar</button>
             </div>
 
-            {loading ? (
-                <div className="loader">Cargando usuarios...</div>
-            ) : (
-                <table className="custom-table">
+            {/* Tabla usando .table-card y .data-table de tu CSS */}
+            <div className="table-card">
+                <table className="data-table">
                     <thead>
                         <tr>
                             <th>Nombre Completo</th>
@@ -71,20 +78,24 @@ const UsersPage = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {/* Al asegurar que users siempre es un array, .map no fallará nunca */}
                         {users.length > 0 ? (
                             users.map((user) => (
                                 <tr key={user._id}>
-                                    <td>{`${user.nombre || ''} ${user.apellido || ''}`}</td>
+                                    <td style={{ fontWeight: '600' }}>
+                                        {`${user.nombre || ''} ${user.apellido || ''}`}
+                                    </td>
                                     <td>{user.email}</td>
                                     <td>
-                                        <span className={`badge badge-${user.role?.toLowerCase() || 'default'}`}>
+                                        {/* Usamos tu badge-success para el rol de Admin */}
+                                        <span className={user.role === 'ADMIN_ROLE' ? 'badge-success' : ''} 
+                                              style={user.role !== 'ADMIN_ROLE' ? { background: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '99px', fontSize: '12px'} : {}}>
                                             {user.role}
                                         </span>
                                     </td>
                                     <td>
                                         <button
-                                            className="btn-edit"
+                                            className="btn-primary"
+                                            style={{ padding: '5px 12px', fontSize: '0.8rem', backgroundColor: '#64748b' }}
                                             onClick={() => navigate(`/users/edit/${user._id}`)}
                                         >
                                             Editar
@@ -94,14 +105,14 @@ const UsersPage = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>
-                                    No se encontraron usuarios.
+                                <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+                                    No se encontraron usuarios en la base de datos.
                                 </td>
                             </tr>
                         )}
                     </tbody>
                 </table>
-            )}
+            </div>
         </div>
     );
 }

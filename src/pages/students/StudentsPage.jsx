@@ -6,26 +6,32 @@ import { toast } from 'react-toastify';
 
 const StudentsPage = () => {
   const navigate = useNavigate();
-  const user = getAuthUser(); // Usuario actual
+  const user = getAuthUser();
   
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Estado para los filtros
   const [formData, setFormData] = useState({
     matricula: '',
     nombre: ''
   });
 
-  // Función para cargar estudiantes
+  // Función para cargar estudiantes con diagnóstico
   const fetchStudents = async () => {
     try {
       setLoading(true);
       const response = await studentService.getStudents(formData);
-      setStudents(response.data || []);
+      
+      console.log("Datos recibidos de la API:", response.data);
+
+      // Normalización de datos: detecta si vienen en .students o directo
+      const data = response.data?.students || response.data || [];
+      setStudents(Array.isArray(data) ? data : []);
+
     } catch (error) {
       console.error('Error al cargar estudiantes:', error);
-      toast.error('Error al cargar los estudiantes');
+      toast.error('Error al conectar con el servidor de estudiantes');
+      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -35,7 +41,6 @@ const StudentsPage = () => {
     fetchStudents();
   }, []);
 
-  // Función para eliminar estudiante
   const handleDelete = async (id) => {
     const confirmed = window.confirm('¿Estás seguro de eliminar este estudiante?');
     if (!confirmed) return;
@@ -43,106 +48,155 @@ const StudentsPage = () => {
     try {
       await studentService.deleteStudent(id);
       toast.success('Estudiante eliminado correctamente');
-      fetchStudents(); // Recargar lista
+      fetchStudents(); 
     } catch (error) {
       toast.error('Error al eliminar el estudiante');
     }
   };
 
   return (
-    <div className="page-container">
-      <div className="page-header">
+    <div className="page-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      
+      {/* HEADER DE LA PÁGINA */}
+      <div className="page-header" style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '30px',
+        borderBottom: '2px solid #eee',
+        paddingBottom: '15px'
+      }}>
         <div>
-          <h2 className="page-title">👨‍🎓 Gestión de Estudiantes</h2>
-          <p className="page-description">Registro y administración de la biblioteca</p>
+          <h2 style={{ margin: 0, color: '#1a237e', fontSize: '1.8rem' }}>👨‍🎓 Gestión de Estudiantes</h2>
+          <p style={{ margin: 0, color: '#666' }}>Registro y administración de la biblioteca</p>
         </div>
         
-        {/* Solo ADMIN puede crear estudiantes */}
-        {user?.role === 'ADMIN_ROLE' && (
-          <button 
-            className="btn btn-primary"
-            onClick={() => navigate('/students/create')}
-          >
-            + Nuevo Estudiante
-          </button>
-        )}
+        {/* Botón habilitado para todos los niveles de acceso (Temporalmente) */}
+        <button 
+          className="btn btn-primary"
+          onClick={() => navigate('/students/create')}
+          style={{ 
+            padding: '12px 24px', 
+            fontWeight: 'bold', 
+            backgroundColor: '#1a237e', 
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+            transition: 'background 0.3s'
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = '#0d47a1'}
+          onMouseOut={(e) => e.target.style.backgroundColor = '#1a237e'}
+        >
+          + Nuevo Estudiante
+        </button>
       </div>
 
-      {/* Formulario de búsqueda */}
-      <div className="search-section">
-        <div className="search-form">
-          <div className="form-group-inline">
-            <label>Matrícula:</label>
+      {/* SECCIÓN DE BÚSQUEDA */}
+      <div className="search-section" style={{ 
+        backgroundColor: '#f8f9fa', 
+        padding: '20px', 
+        borderRadius: '8px', 
+        marginBottom: '25px',
+        border: '1px solid #e0e0e0'
+      }}>
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: '1 1 200px' }}>
+            <label style={{ marginBottom: '8px', fontWeight: '600', color: '#444' }}>Matrícula:</label>
             <input
               type="text"
               value={formData.matricula}
               onChange={(e) => setFormData({ ...formData, matricula: e.target.value })}
-              placeholder="Buscar por matrícula..."
+              placeholder="Ej: 20230001"
+              style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
             />
           </div>
-          <div className="form-group-inline">
-            <label>Nombre:</label>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: '1 1 300px' }}>
+            <label style={{ marginBottom: '8px', fontWeight: '600', color: '#444' }}>Nombre del Alumno:</label>
             <input
               type="text"
               value={formData.nombre}
               onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-              placeholder="Buscar por nombre..."
+              placeholder="Buscar por nombre o apellido..."
+              style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
             />
           </div>
-          <button className="btn btn-info" onClick={fetchStudents}>Buscar</button>
+          <button 
+            onClick={fetchStudents}
+            style={{ 
+              backgroundColor: '#00bcd4', 
+              color: 'white', 
+              border: 'none', 
+              padding: '11px 30px', 
+              borderRadius: '4px', 
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            🔍 Buscar
+          </button>
         </div>
       </div>
 
-      {/* Tabla de estudiantes */}
-      <div className="table-card">
+      {/* TABLA DE RESULTADOS */}
+      <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
         {loading ? (
-          <div className="loading-state">Cargando estudiantes...</div>
+          <div style={{ padding: '50px', textAlign: 'center', fontSize: '1.2rem', color: '#666' }}>
+            ⏳ Cargando base de datos de estudiantes...
+          </div>
         ) : (
-          <div className="table-container">
-            <table className="data-table">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
               <thead>
-                <tr>
-                  <th>Matrícula</th>
-                  <th>Nombre Completo</th>
-                  <th>Grado</th>
-                  <th>Estado</th>
-                  {user?.role === 'ADMIN_ROLE' && <th>Acciones</th>}
+                <tr style={{ backgroundColor: '#1a237e', color: 'white' }}>
+                  <th style={{ padding: '15px', textAlign: 'left' }}>Matrícula</th>
+                  <th style={{ padding: '15px', textAlign: 'left' }}>Nombre Completo</th>
+                  <th style={{ padding: '15px', textAlign: 'left' }}>Grado / Sección</th>
+                  <th style={{ padding: '15px', textAlign: 'center' }}>Estado</th>
+                  <th style={{ padding: '15px', textAlign: 'center' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {students.length > 0 ? (
                   students.map((student) => (
-                    <tr key={student._id}>
-                      <td><strong>{student.matricula}</strong></td>
-                      <td>{student.nombres} {student.apellidos}</td>
-                      <td>{student.grado}° {student.seccion}</td>
-                      <td>
-                        <span className={`badge badge-${student.estado === 'activo' ? 'success' : 'secondary'}`}>
-                          {student.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                    <tr key={student._id} style={{ borderBottom: '1px solid #eee' }} className="table-row-hover">
+                      <td style={{ padding: '15px' }}><strong>{student.matricula}</strong></td>
+                      <td style={{ padding: '15px' }}>{student.nombres} {student.apellidos}</td>
+                      <td style={{ padding: '15px' }}>{student.grado}° "{student.seccion}"</td>
+                      <td style={{ padding: '15px', textAlign: 'center' }}>
+                        <span style={{ 
+                            padding: '5px 12px', 
+                            borderRadius: '20px', 
+                            fontSize: '0.85em',
+                            fontWeight: 'bold',
+                            backgroundColor: student.estado === 'activo' ? '#e8f5e9' : '#ffebee',
+                            color: student.estado === 'activo' ? '#2e7d32' : '#c62828',
+                            border: `1px solid ${student.estado === 'activo' ? '#2e7d32' : '#c62828'}`
+                        }}>
+                          {student.estado === 'activo' ? 'ACTIVO' : 'INACTIVO'}
                         </span>
                       </td>
-                      {user?.role === 'ADMIN_ROLE' && (
-                        <td className="table-actions">
-                          <button 
-                            className="btn-edit" 
-                            onClick={() => navigate(`/students/edit/${student._id}`)}
-                          >
-                            Editar
-                          </button>
-                          <button 
-                            className="btn-delete" 
-                            onClick={() => handleDelete(student._id)}
-                          >
-                            Eliminar
-                          </button>
-                        </td>
-                      )}
+                      <td style={{ padding: '15px', textAlign: 'center' }}>
+                        <button 
+                          style={{ marginRight: '15px', color: '#1976d2', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                          onClick={() => navigate(`/students/edit/${student._id}`)}
+                        >
+                          ✏️ Editar
+                        </button>
+                        <button 
+                          style={{ color: '#d32f2f', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                          onClick={() => handleDelete(student._id)}
+                        >
+                          🗑️ Eliminar
+                        </button>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={user?.role === 'ADMIN_ROLE' ? "5" : "4"} className="no-data">
-                      No se encontraron estudiantes
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: '#999', fontSize: '1.1rem' }}>
+                      🚫 No se encontraron estudiantes registrados.
                     </td>
                   </tr>
                 )}

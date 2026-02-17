@@ -1,20 +1,12 @@
-import api from '../api/axiosInstance';
+import axios from 'axios';
 
-// Obtener todas las reservaciones con filtros (ej: por estado 'pendiente' o 'disponible')
-export const getReservations = (filtros = {}) => {
-    const filtrosLimpios = Object.fromEntries(
-        Object.entries(filtros).filter(([_, value]) => value !== '' && value !== null && value !== undefined)
-    );
-    return api.get('/reservations', {
-        params: filtrosLimpios 
-    });
+const BASE_URL = 'http://localhost:3000/api/reservations';
+
+export const reservationService = {
+  getAll: () => axios.get(BASE_URL),
+  create: (data) => axios.post(BASE_URL, data),
+  cancel: (id) => axios.put(`${BASE_URL}/cancel/${id}`),
+  getById: (id) => axios.get(`${BASE_URL}/${id}`)
 };
 
-export const getReservationById = (id) => api.get(`/reservations/${id}`);
-
-export const createReservation = (reservationData) => api.post('/reservations', reservationData);
-
-// Función específica para cancelar 
-export const cancelReservation = (id) => api.put(`/reservations/${id}/cancel`);
-
-export const deleteReservation = (id) => api.delete(`/reservations/${id}`);
+export default reservationService;

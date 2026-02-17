@@ -18,9 +18,23 @@ import BooksPage from './pages/books/BooksPage';
 import CreateBookPage from './pages/books/CreateBookPage';
 import EditBookPage from './pages/books/EditBookPage';
 
+// Categorías
+import CategoriesPage from './pages/categories/CategoriesPage';
+import CreateCategoryPage from './pages/categories/CreateCategoryPage';
+
 // Préstamos
 import LoansPage from './pages/loans/LoansPage';
 import CreateLoanPage from './pages/loans/CreateLoanPage';
+
+// --- IMPORTACIONES ACTIVADAS ---
+import ReturnsPage from './pages/returns/ReturnsPage';
+import CreateReturnPage from './pages/returns/CreateReturnPage'; 
+
+import FinesPage from './pages/fines/FinesPage';
+import CreateFinePage from './pages/fines/CreateFinePage'; 
+
+import ReservationsPage from './pages/reservations/ReservationsPage';
+import CreateReservationPage from './pages/reservations/CreateReservationPage'; 
 
 // Usuarios y Seguridad
 import UsersPage from './pages/users/UsersPage';
@@ -33,43 +47,45 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* El Layout envuelve a todas las páginas para mostrar el Navbar/Menú */}
         <Route path="/" element={<Layout />}>
           
-          {/* --- RUTAS PÚBLICAS --- */}
           <Route index element={<Home />} />
           <Route path="/users/login" element={<LoginUserPage />} />
 
-          {/* --- RUTAS PROTEGIDAS: ACCESO GENERAL (Admin y Usuarios) --- */}
+          {/* --- RUTAS PROTEGIDAS: ACCESO GENERAL --- */}
           <Route element={<ProtectedRoute allowedRoles={['ADMIN_ROLE', 'USER_ROLE']} />}>
             <Route path="/students" element={<StudentsPage />} />
             <Route path="/books" element={<BooksPage />} />
+            <Route path="/categories" element={<CategoriesPage />} /> 
             <Route path="/loans" element={<LoansPage />} />
+            <Route path="/returns" element={<ReturnsPage />} />
+            <Route path="/fines" element={<FinesPage />} />
+            <Route path="/reservations" element={<ReservationsPage />} />
             <Route path="/users/changepassword" element={<ChangePasswordUserPage />} />
           </Route>
 
           {/* --- RUTAS PROTEGIDAS: GESTIÓN (Solo Admin) --- */}
           <Route element={<ProtectedRoute allowedRoles={['ADMIN_ROLE']} />}>
-            {/* Gestión de Estudiantes */}
             <Route path="/students/create" element={<CreateStudentPage />} />
             <Route path="/students/edit/:id" element={<EditStudentPage />} />
             
-            {/* Gestión de Libros */}
             <Route path="/books/create" element={<CreateBookPage />} />
             <Route path="/books/edit/:id" element={<EditBookPage />} />
+            <Route path="/categories/create" element={<CreateCategoryPage />} />
             
-            {/* Gestión de Préstamos */}
             <Route path="/loans/create" element={<CreateLoanPage />} />
 
-            {/* Gestión de Usuarios del Sistema */}
+            {/* RUTAS DE CREACIÓN ACTIVADAS AHORA */}
+            <Route path="/returns/create" element={<CreateReturnPage />} />
+            <Route path="/fines/create" element={<CreateFinePage />} />
+            <Route path="/reservations/create" element={<CreateReservationPage />} /> 
+
             <Route path="/users" element={<UsersPage />} />
             <Route path="/users/create" element={<CreateUserPage />} />
             <Route path="/users/edit/:id" element={<EditUserPage />} />
           </Route>
 
-          {/* Redirección automática si la ruta no existe */}
           <Route path="*" element={<Navigate to="/" />} />
-          
         </Route>
       </Routes>
     </BrowserRouter>

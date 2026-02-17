@@ -1,19 +1,12 @@
-import api from '../api/axiosInstance';
+import axios from 'axios';
 
-export const studentService = {
-    // La página CreateLoan busca "getAll"
-    getAll: async (filtros = {}) => {
-        const filtrosLimpios = Object.fromEntries(
-            Object.entries(filtros).filter(([_, value]) =>
-                value !== '' && value !== null && value !== undefined
-            )
-        );
-        return await api.get('/students', { params: filtrosLimpios });
-    },
-    getById: (id) => api.get(`/students/${id}`),
-    create: (data) => api.post('/students', data),
-    update: (id, data) => api.put(`/students/${id}`, data),
-    delete: (id) => api.delete(`/students/${id}`)
+const BASE_URL = 'http://localhost:3000/api/returns';
+
+export const returnService = {
+  getAll: () => axios.get(BASE_URL),
+  getById: (id) => axios.get(`${BASE_URL}/${id}`),
+  create: (data) => axios.post(BASE_URL, data),
+  delete: (id) => axios.delete(`${BASE_URL}/${id}`)
 };
 
-export default studentService;
+export default returnService;

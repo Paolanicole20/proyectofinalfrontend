@@ -6,17 +6,17 @@ import { bookZodSchema } from '../../schemas/book';
 import ErrorMessage from '../../components/ErrorMessage';
 import { toast } from 'react-toastify';
 
-
 const CreateBookPage = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
+  
   const [formData, setFormData] = useState({
     isbn: '',
     titulo: '',
     autor: '',
     editorial: '',
-    anio: new Date().getFullYear().toString(),
-    categoria: '',
+    anioPublicacion: new Date().getFullYear().toString(),
+    categoryId: '', 
     cantidadDisponible: '1',
     ubicacion: '',
     descripcion: ''
@@ -26,19 +26,42 @@ const CreateBookPage = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
+  // ==========================================
+  // BLOQUE DE DIAGNÓSTICO EN VIVO
+  // ==========================================
   useEffect(() => {
     const loadCategories = async () => {
       try {
+        console.log("--- Iniciando petición de categorías ---");
         const response = await categoryService.getAll();
-        setCategories(response.data || []);
+        
+        // Imprimimos la respuesta completa para ver la estructura
+        console.log("Respuesta completa del servidor:", response);
+        console.log("Datos dentro de response.data:", response.data);
+
+        // Verificamos si es un array o viene dentro de otra propiedad
+        const data = response.data;
+        if (Array.isArray(data)) {
+          setCategories(data);
+        } else if (data && Array.isArray(data.categories)) {
+          setCategories(data.categories);
+        } else if (data && Array.isArray(data.docs)) {
+          setCategories(data.docs);
+        } else {
+          console.error("El formato de datos no es un array conocido:", data);
+          setCategories([]);
+        }
+
       } catch (error) {
-        toast.error('Error al cargar catálogo de categorías');
+        console.error("Error detallado en la petición:", error);
+        toast.error('Error al cargar catálogo de categorías. Revisa la consola (F12).');
       } finally {
         setFetching(false);
       }
     };
     loadCategories();
   }, []);
+  // ==========================================
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -48,17 +71,8 @@ const CreateBookPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // 1. Preparar datos para validación (convertir números)
-    const dataToValidate = {
-      ...formData,
-      anio: parseInt(formData.anio),
-      cantidadDisponible: parseInt(formData.cantidadDisponible)
-    };
-
     try {
-      // 2. Validar con Zod
-      const result = bookZodSchema.safeParse(dataToValidate);
+      const result = bookZodSchema.safeParse(formData);
       
       if (!result.success) {
         const issues = result.error.issues.map(i => ({
@@ -70,36 +84,33 @@ const CreateBookPage = () => {
       }
 
       setLoading(true);
-      await bookService.create(dataToValidate);
-      toast.success('Libro registrado exitosamente en el catálogo');
+      await bookService.create(result.data); 
+      toast.success('Libro registrado exitosamente');
       navigate('/books');
 
     } catch (error) {
-      const msg = error.response?.data?.error || 'Error al guardar el libro';
+      console.error("Error al guardar:", error);
+      const msg = error.response?.data?.msg || 'Error al guardar el libro';
       setErrors([{ campo: 'SERVER', mensaje: msg }]);
     } finally {
       setLoading(false);
     }
   };
 
-  if (fetching) return <div className="loading-state">Preparando formulario de catálogo...</div>;
+  if (fetching) return <div className="loading-state">Cargando categorías y recursos...</div>;
 
   return (
     <div className="page-container">
       <div className="page-header">
         <div>
           <h2 className="page-title">📖 Registro de Nuevo Libro</h2>
-          <p className="page-description">Ingrese los metadatos de la obra para el inventario</p>
+          <p className="page-description">Complete la ficha técnica para el inventario</p>
         </div>
-        <button className="btn btn-secondary" onClick={() => navigate('/books')}>
-          ← Volver
-        </button>
       </div>
 
       <div className="form-card">
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
-            {/* Identificación */}
             <div className="form-group">
               <label>ISBN / Código de Barras:</label>
               <input
@@ -119,12 +130,10 @@ const CreateBookPage = () => {
                 name="titulo"
                 value={formData.titulo}
                 onChange={handleChange}
-                placeholder="Nombre completo del libro"
                 className={errors.some(e => e.campo === 'titulo') ? 'input-error' : ''}
               />
             </div>
 
-            {/* Autoría y Editorial */}
             <div className="form-group">
               <label>Autor(es):</label>
               <input
@@ -132,7 +141,6 @@ const CreateBookPage = () => {
                 name="autor"
                 value={formData.autor}
                 onChange={handleChange}
-                placeholder="Nombre del autor principal"
                 className={errors.some(e => e.campo === 'autor') ? 'input-error' : ''}
               />
             </div>
@@ -148,34 +156,38 @@ const CreateBookPage = () => {
               />
             </div>
 
-            {/* Clasificación */}
             <div className="form-group">
               <label>Categoría / Género:</label>
               <select
-                name="categoria"
-                value={formData.categoria}
+                name="categoryId"
+                value={formData.categoryId}
                 onChange={handleChange}
-                className={errors.some(e => e.campo === 'categoria') ? 'input-error' : ''}
+                className={errors.some(e => e.campo === 'categoryId') ? 'input-error' : ''}
               >
                 <option value="">-- Seleccione Categoría --</option>
+                {/* Renderizado defensivo: probamos con .nombre y con .name */}
                 {categories.map(cat => (
-                  <option key={cat._id} value={cat._id}>{cat.nombre}</option>
+                  <option key={cat._id} value={cat._id}>
+                    {cat.nombre || cat.name || "Sin nombre"}
+                  </option>
                 ))}
               </select>
+              {categories.length === 0 && (
+                <small style={{ color: 'orange' }}>⚠️ No se encontraron categorías en la base de datos.</small>
+              )}
             </div>
 
             <div className="form-group">
               <label>Año de Edición:</label>
               <input
                 type="number"
-                name="anio"
-                value={formData.anio}
+                name="anioPublicacion"
+                value={formData.anioPublicacion}
                 onChange={handleChange}
-                className={errors.some(e => e.campo === 'anio') ? 'input-error' : ''}
+                className={errors.some(e => e.campo === 'anioPublicacion') ? 'input-error' : ''}
               />
             </div>
 
-            {/* Inventario */}
             <div className="form-group">
               <label>Cantidad de Ejemplares:</label>
               <input
@@ -183,7 +195,6 @@ const CreateBookPage = () => {
                 name="cantidadDisponible"
                 value={formData.cantidadDisponible}
                 onChange={handleChange}
-                min="1"
                 className={errors.some(e => e.campo === 'cantidadDisponible') ? 'input-error' : ''}
               />
             </div>
@@ -195,7 +206,7 @@ const CreateBookPage = () => {
                 name="ubicacion"
                 value={formData.ubicacion}
                 onChange={handleChange}
-                placeholder="Ej: Pasillo A - Estante 4"
+                placeholder="Ej: Estante A-13"
                 className={errors.some(e => e.campo === 'ubicacion') ? 'input-error' : ''}
               />
             </div>
@@ -208,19 +219,19 @@ const CreateBookPage = () => {
               value={formData.descripcion}
               onChange={handleChange}
               rows="3"
-              placeholder="Breve sinopsis o notas del estado del libro..."
             />
           </div>
 
           <ErrorMessage errors={errors} />
 
-          <div className="button-group">
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Registrando...' : 'Registrar Libro'}
+          <div className="button-group" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+            <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={loading}>
+              {loading ? 'Guardando...' : 'Registrar Libro'}
             </button>
             <button 
               type="button" 
               className="btn btn-secondary" 
+              style={{ flex: 1, backgroundColor: '#6c757d', color: 'white' }} 
               onClick={() => navigate('/books')}
               disabled={loading}
             >
